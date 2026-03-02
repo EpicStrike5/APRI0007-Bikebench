@@ -1,0 +1,723 @@
+%CMF
+# %PSECTS Section
+# For each object file, details of its psects are enumerated here.
+# The begining of the section is indicated by %PSECTS.  The first
+# line indicates the name of the first object file, e.g.
+#    $foo.obj
+# Each line that follows describes a psect in that object file, until
+# the next object file.  The lines that describe a psect have the
+# format:
+#    <psect name> <class name> <space> <link address> <load addresses> <length> <delta> <reloc>
+# All addresses and the length are given in unqualified hexadecimal
+# in delta units.  Any other numeric values are decimal.
+%PSECTS
+$build/default/debug/main.o
+isrServo CODE 0 460 460 2A 1 4
+ivt CODE 0 8 8 3A 1 2
+resetVec CODE 0 0 0 4 1 2
+isrDebounce CODE 0 430 430 30 1 4
+code CODE 0 108 108 326 1 2
+udata_acs COMRAM 1 500 500 1C 1 1
+config CONFIG 4 300000 300000 23 1 1
+# %UNUSED Section
+# This section enumerates the unused ranges of each CLASS. Each entry
+# is described on a single line as follows:
+#    <class name> <range> <delta>
+# Addresses given in the range are in hexadecimal and units of delta.
+%UNUSED
+RAM 560-36FF 1
+SFR 4-7 1
+SFR 42-107 1
+SFR 42E-42F 1
+SFR 48A-4FF 1
+SFR 3700-3FFF 1
+BANK5 560-5FF 1
+BANK6 600-6FF 1
+BANK7 700-7FF 1
+BANK8 800-8FF 1
+BANK9 900-9FF 1
+CONST 4-7 1
+CONST 42-107 1
+CONST 42E-42F 1
+CONST 48A-1FFFF 1
+IDLOC 200000-20003F 1
+SMALLCONST 4000-FFFF 1
+SMALLCONST 14000-1FFFF 1
+CODE 4-7 1
+CODE 42-107 1
+CODE 42E-42F 1
+CODE 48A-1FFFF 1
+BANK10 A00-AFF 1
+BANK11 B00-BFF 1
+BANK12 C00-CFF 1
+BANK13 D00-DFF 1
+BANK14 E00-EFF 1
+BANK15 F00-FFF 1
+BANK16 1000-10FF 1
+BANK17 1100-11FF 1
+BANK18 1200-12FF 1
+BANK19 1300-13FF 1
+BANK20 1400-14FF 1
+BANK21 1500-15FF 1
+BANK22 1600-16FF 1
+BANK23 1700-17FF 1
+BANK24 1800-18FF 1
+BANK25 1900-19FF 1
+BANK26 1A00-1AFF 1
+BANK27 1B00-1BFF 1
+BANK28 1C00-1CFF 1
+BANK29 1D00-1DFF 1
+BANK30 1E00-1EFF 1
+BANK31 1F00-1FFF 1
+BANK32 2000-20FF 1
+BANK33 2100-21FF 1
+BANK34 2200-22FF 1
+BANK35 2300-23FF 1
+BANK36 2400-24FF 1
+BANK37 2500-25FF 1
+BANK38 2600-26FF 1
+BANK39 2700-27FF 1
+BANK40 2800-28FF 1
+BANK41 2900-29FF 1
+BANK42 2A00-2AFF 1
+BANK43 2B00-2BFF 1
+BANK44 2C00-2CFF 1
+BANK45 2D00-2DFF 1
+BANK46 2E00-2EFF 1
+BANK47 2F00-2FFF 1
+BANK48 3000-30FF 1
+BANK49 3100-31FF 1
+BANK50 3200-32FF 1
+BANK51 3300-33FF 1
+BANK52 3400-34FF 1
+BANK53 3500-35FF 1
+BANK54 3600-36FF 1
+BIGRAM 500-36FF 1
+BIGSFR 4-7 1
+BIGSFR 42-107 1
+BIGSFR 42E-42F 1
+BIGSFR 48A-4FF 1
+BIGSFR 3700-3FFF 1
+COMRAM 51C-55F 1
+CONFIG 300023-300023 1
+EEDATA 380000-3803FF 1
+MEDIUMCONST 4000-FFFF 1
+MEDIUMCONST 14000-1FFFF 1
+# %LINETAB Section
+# This section enumerates the file/line to address mappings.
+# The beginning of the section is indicated by %LINETAB.
+# The first line indicates the name of the first object file, e.g.
+#   $foo.obj
+# Each line that follows describes a single mapping until the next
+# object file.  Mappings have the following format:
+#    <address> <psect name> <class name> ><line number>:<file name>
+# The address is absolute and given given in unqualified hex 
+# in delta units of the psect. All mappings within an object file
+# are in ascending order of addresses.
+# All other numeric values are in decimal.
+%LINETAB
+$build/default/debug/main.o
+430 isrDebounce CODE >70:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+432 isrDebounce CODE >71:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+434 isrDebounce CODE >74:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+436 isrDebounce CODE >75:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+438 isrDebounce CODE >76:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+43A isrDebounce CODE >79:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+43C isrDebounce CODE >80:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+43E isrDebounce CODE >83:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+440 isrDebounce CODE >84:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+442 isrDebounce CODE >85:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+444 isrDebounce CODE >86:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+446 isrDebounce CODE >87:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+448 isrDebounce CODE >88:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+44A isrDebounce CODE >92:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+44C isrDebounce CODE >93:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+44E isrDebounce CODE >94:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+450 isrDebounce CODE >95:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+454 isrDebounce CODE >96:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+456 isrDebounce CODE >100:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+458 isrDebounce CODE >101:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+45A isrDebounce CODE >102:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+45C isrDebounce CODE >103:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+45E isrDebounce CODE >104:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3E ivt CODE >111:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+40 ivt CODE >123:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+460 isrServo CODE >81:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+462 isrServo CODE >82:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+464 isrServo CODE >85:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+466 isrServo CODE >86:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+46A isrServo CODE >90:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+46C isrServo CODE >94:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+46E isrServo CODE >95:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+470 isrServo CODE >96:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+472 isrServo CODE >97:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+474 isrServo CODE >98:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+476 isrServo CODE >100:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+478 isrServo CODE >101:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+47A isrServo CODE >106:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+47C isrServo CODE >109:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+47E isrServo CODE >110:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+480 isrServo CODE >111:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+482 isrServo CODE >112:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+484 isrServo CODE >113:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+486 isrServo CODE >115:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+488 isrServo CODE >116:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+0 resetVec CODE >41:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+108 code CODE >33:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+10A code CODE >34:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+10C code CODE >36:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+10E code CODE >37:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+110 code CODE >39:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+112 code CODE >40:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+114 code CODE >42:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+116 code CODE >43:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+118 code CODE >44:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+11A code CODE >45:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+11E code CODE >47:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+120 code CODE >48:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+122 code CODE >49:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+124 code CODE >50:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+128 code CODE >52:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+12A code CODE >53:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+12C code CODE >55:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+12E code CODE >56:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+132 code CODE >58:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+134 code CODE >59:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+136 code CODE >60:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+13A code CODE >62:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+13C code CODE >65:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+13E code CODE >66:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+140 code CODE >67:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+142 code CODE >68:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+144 code CODE >69:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+146 code CODE >70:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+14A code CODE >77:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+14C code CODE >78:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+14E code CODE >80:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+150 code CODE >81:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+154 code CODE >82:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+156 code CODE >83:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+15A code CODE >84:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+15C code CODE >85:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+160 code CODE >86:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+162 code CODE >87:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+166 code CODE >88:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+168 code CODE >89:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+16C code CODE >90:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+16E code CODE >129:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+170 code CODE >130:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+172 code CODE >131:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+174 code CODE >132:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+176 code CODE >133:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+178 code CODE >134:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+17A code CODE >142:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+17C code CODE >143:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+17E code CODE >144:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+180 code CODE >145:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+182 code CODE >146:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+184 code CODE >147:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+186 code CODE >154:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+188 code CODE >155:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+18A code CODE >156:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+18C code CODE >157:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+18E code CODE >158:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+190 code CODE >166:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+192 code CODE >167:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+194 code CODE >168:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+196 code CODE >169:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+198 code CODE >170:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+19A code CODE >171:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+19C code CODE >172:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+19E code CODE >173:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+1A0 code CODE >174:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+1A2 code CODE >224:C:\Users\Thomas\MPLABXProjects\APRI0007.X/pinconfig.inc
+1A4 code CODE >142:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1A6 code CODE >143:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1A8 code CODE >144:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1AA code CODE >145:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1AC code CODE >146:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1AE code CODE >150:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1B0 code CODE >151:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1B2 code CODE >152:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1B4 code CODE >153:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1B6 code CODE >156:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1B8 code CODE >157:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1BA code CODE >160:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1BC code CODE >161:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1BE code CODE >162:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1C0 code CODE >163:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1C4 code CODE >166:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1C6 code CODE >167:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1C8 code CODE >168:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1CA code CODE >169:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1CC code CODE >172:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1CE code CODE >180:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1D0 code CODE >183:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1D2 code CODE >184:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1D4 code CODE >186:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1D8 code CODE >188:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1DA code CODE >189:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1DC code CODE >190:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1DE code CODE >197:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1E0 code CODE >198:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1E2 code CODE >199:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1E4 code CODE >200:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1E6 code CODE >201:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1EA code CODE >203:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1EC code CODE >204:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1F0 code CODE >211:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1F2 code CODE >212:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1F4 code CODE >213:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1F6 code CODE >214:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1F8 code CODE >215:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1FC code CODE >217:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+1FE code CODE >218:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+202 code CODE >237:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+204 code CODE >238:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+206 code CODE >239:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+208 code CODE >241:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+20A code CODE >242:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+20C code CODE >243:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+20E code CODE >244:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+210 code CODE >245:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+212 code CODE >246:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+214 code CODE >247:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+216 code CODE >248:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+218 code CODE >249:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+21A code CODE >250:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+21C code CODE >251:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+21E code CODE >252:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+220 code CODE >255:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+222 code CODE >256:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+224 code CODE >257:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+226 code CODE >258:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+228 code CODE >263:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+22A code CODE >264:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+22C code CODE >265:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+22E code CODE >267:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+230 code CODE >268:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+232 code CODE >269:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+234 code CODE >270:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+236 code CODE >271:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+238 code CODE >275:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+23A code CODE >276:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+23C code CODE >277:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+23E code CODE >278:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+240 code CODE >281:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+242 code CODE >282:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+244 code CODE >283:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+246 code CODE >284:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+248 code CODE >286:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo_hw.inc
+24A code CODE >95:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+24C code CODE >96:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+24E code CODE >100:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+250 code CODE >101:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+252 code CODE >102:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+254 code CODE >106:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+256 code CODE >107:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+258 code CODE >108:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+25A code CODE >109:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+25C code CODE >110:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+25E code CODE >114:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+260 code CODE >115:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+262 code CODE >116:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+264 code CODE >117:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+266 code CODE >118:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+268 code CODE >122:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+26A code CODE >123:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+26C code CODE >124:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+26E code CODE >126:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+270 code CODE >127:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+272 code CODE >129:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+274 code CODE >130:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+276 code CODE >131:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+278 code CODE >134:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+27A code CODE >135:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+27C code CODE >136:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+27E code CODE >137:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+280 code CODE >138:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+282 code CODE >139:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+284 code CODE >140:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+286 code CODE >141:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+288 code CODE >142:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+28A code CODE >146:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+28C code CODE >147:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+28E code CODE >148:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+290 code CODE >150:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+292 code CODE >151:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+294 code CODE >153:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+296 code CODE >154:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+298 code CODE >156:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+29A code CODE >157:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+29C code CODE >161:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+29E code CODE >162:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2A0 code CODE >163:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2A2 code CODE >165:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2A4 code CODE >166:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2A6 code CODE >168:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2A8 code CODE >170:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2AA code CODE >171:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2AC code CODE >175:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2AE code CODE >176:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2B0 code CODE >177:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2B2 code CODE >180:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2B4 code CODE >181:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2B6 code CODE >182:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2B8 code CODE >183:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2BA code CODE >184:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2BC code CODE >187:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2BE code CODE >188:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2C0 code CODE >189:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2C2 code CODE >190:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2C4 code CODE >191:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2C6 code CODE >192:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2C8 code CODE >195:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2CA code CODE >196:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2CC code CODE >199:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2CE code CODE >200:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2D0 code CODE >201:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2D2 code CODE >205:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2D4 code CODE >206:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2D6 code CODE >207:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2D8 code CODE >208:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2DA code CODE >209:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2DC code CODE >211:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2DE code CODE >220:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2E0 code CODE >221:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2E2 code CODE >222:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2E4 code CODE >223:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2E6 code CODE >233:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2E8 code CODE >234:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2EA code CODE >235:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2EC code CODE >236:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2EE code CODE >237:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2F0 code CODE >240:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2F2 code CODE >241:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2F4 code CODE >244:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2F6 code CODE >245:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2F8 code CODE >246:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2FA code CODE >247:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2FC code CODE >261:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+2FE code CODE >262:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+300 code CODE >264:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+302 code CODE >265:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+304 code CODE >266:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+306 code CODE >269:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+308 code CODE >270:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+30A code CODE >273:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+30C code CODE >274:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+30E code CODE >275:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+310 code CODE >278:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+312 code CODE >279:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+314 code CODE >280:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+316 code CODE >284:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+318 code CODE >285:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+31A code CODE >286:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+31C code CODE >287:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+31E code CODE >288:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+320 code CODE >289:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+322 code CODE >290:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+324 code CODE >291:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+326 code CODE >292:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+328 code CODE >293:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+32A code CODE >294:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+32C code CODE >295:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+32E code CODE >296:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+330 code CODE >297:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+332 code CODE >298:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+334 code CODE >299:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+336 code CODE >302:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+338 code CODE >303:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+33A code CODE >305:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+33C code CODE >314:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+33E code CODE >315:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+340 code CODE >323:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+342 code CODE >324:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+344 code CODE >339:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+346 code CODE >342:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+348 code CODE >343:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+34A code CODE >344:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+34C code CODE >345:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+34E code CODE >346:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+350 code CODE >349:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+352 code CODE >350:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+354 code CODE >353:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+356 code CODE >354:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+358 code CODE >355:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+35A code CODE >356:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+35C code CODE >360:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+35E code CODE >361:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+360 code CODE >363:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+362 code CODE >364:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+364 code CODE >365:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+366 code CODE >367:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+368 code CODE >368:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+36A code CODE >370:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+36C code CODE >371:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+36E code CODE >372:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+370 code CODE >374:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+372 code CODE >375:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+374 code CODE >376:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+376 code CODE >379:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+378 code CODE >380:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+37A code CODE >381:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+37C code CODE >382:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+37E code CODE >383:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+380 code CODE >384:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+382 code CODE >385:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+384 code CODE >386:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+386 code CODE >387:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+388 code CODE >388:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+38A code CODE >389:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+38C code CODE >390:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+38E code CODE >391:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+390 code CODE >392:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+392 code CODE >393:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+394 code CODE >394:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+396 code CODE >397:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+398 code CODE >398:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+39A code CODE >399:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+39C code CODE >401:C:\Users\Thomas\MPLABXProjects\APRI0007.X/can_torque.inc
+39E code CODE >128:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3A0 code CODE >129:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3A2 code CODE >130:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3A4 code CODE >131:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3A6 code CODE >132:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3A8 code CODE >133:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3AA code CODE >134:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3AC code CODE >138:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3AE code CODE >139:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3B0 code CODE >140:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3B2 code CODE >141:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3B4 code CODE >142:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3B6 code CODE >143:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3B8 code CODE >144:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3BA code CODE >145:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3BC code CODE >146:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3BE code CODE >147:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3C0 code CODE >148:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3C2 code CODE >149:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3C4 code CODE >150:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3C6 code CODE >154:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3C8 code CODE >155:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3CA code CODE >156:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3CC code CODE >157:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3CE code CODE >160:C:\Users\Thomas\MPLABXProjects\APRI0007.X/debounce.inc
+3D0 code CODE >61:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3D4 code CODE >64:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3D6 code CODE >65:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3D8 code CODE >66:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3DA code CODE >67:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3DE code CODE >68:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3E0 code CODE >69:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3E2 code CODE >70:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3E6 code CODE >71:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3E8 code CODE >72:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3EA code CODE >73:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3EE code CODE >74:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3F0 code CODE >77:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3F4 code CODE >78:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3F8 code CODE >79:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3FA code CODE >80:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3FC code CODE >81:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+3FE code CODE >82:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+400 code CODE >83:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+404 code CODE >93:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+406 code CODE >94:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+40A code CODE >97:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+40C code CODE >98:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+410 code CODE >101:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+412 code CODE >102:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+416 code CODE >104:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+41A code CODE >110:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+41E code CODE >111:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+420 code CODE >112:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+422 code CODE >113:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+424 code CODE >116:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+428 code CODE >117:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+42A code CODE >118:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+42C code CODE >119:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+# %SYMTAB Section
+# An enumeration of all symbols in the program.
+# The beginning of the section is indicated by %SYMTAB.
+# Each line describes a single symbol as follows:
+#    <label> <value> [-]<load-adj> <class> <space> <psect> <file-name>
+# The value and load-adj are both in unqualified hexadecimal.
+# All other numeric values are in decimal.  The load-adj is the
+# quantity one needs to add to the symbol value in order to obtain the load
+# address of the symbol.  This value may be signed. If the symbol
+# was defined in a psect then <psect> will be "-". File-name
+# is the name of the object file in which the symbol was defined.
+%SYMTAB
+__Hspace_0 48A 0 ABS 0 - -
+__Hspace_1 51C 0 ABS 0 - -
+__Hspace_3 0 0 ABS 0 - -
+__Hspace_4 600023 0 ABS 0 - -
+__LisrServo 42E 0 ABS 0 isrServo -
+__Hudata_bank5 42E 0 ABS 0 udata_bank5 -
+__Hudata_bank6 42E 0 ABS 0 udata_bank6 -
+__Hudata_bank7 42E 0 ABS 0 udata_bank7 -
+__Hudata_bank8 42E 0 ABS 0 udata_bank8 -
+__Hudata_bank9 42E 0 ABS 0 udata_bank9 -
+__L__absolute__ 0 0 ABS 0 __absolute__ -
+__LresetVec 0 0 CODE 0 resetVec -
+__HisrServo 42E 0 ABS 0 isrServo -
+__Hudata_bank10 42E 0 ABS 0 udata_bank10 -
+__Hudata_bank11 42E 0 ABS 0 udata_bank11 -
+__Hudata_bank12 42E 0 ABS 0 udata_bank12 -
+__Hudata_bank13 42E 0 ABS 0 udata_bank13 -
+__Hudata_bank14 42E 0 ABS 0 udata_bank14 -
+__Hudata_bank15 42E 0 ABS 0 udata_bank15 -
+__Hudata_bank16 42E 0 ABS 0 udata_bank16 -
+__Hudata_bank17 42E 0 ABS 0 udata_bank17 -
+__Hudata_bank18 42E 0 ABS 0 udata_bank18 -
+__Hudata_bank19 42E 0 ABS 0 udata_bank19 -
+__Hudata_bank20 42E 0 ABS 0 udata_bank20 -
+__Hudata_bank21 42E 0 ABS 0 udata_bank21 -
+__Hudata_bank22 42E 0 ABS 0 udata_bank22 -
+__Hudata_bank23 42E 0 ABS 0 udata_bank23 -
+__Hudata_bank24 42E 0 ABS 0 udata_bank24 -
+__Hudata_bank25 42E 0 ABS 0 udata_bank25 -
+__Hudata_bank26 42E 0 ABS 0 udata_bank26 -
+__Hudata_bank27 42E 0 ABS 0 udata_bank27 -
+__Hudata_bank28 42E 0 ABS 0 udata_bank28 -
+__Hudata_bank29 42E 0 ABS 0 udata_bank29 -
+__Hudata_bank30 42E 0 ABS 0 udata_bank30 -
+__Hudata_bank31 42E 0 ABS 0 udata_bank31 -
+__Hudata_bank32 42E 0 ABS 0 udata_bank32 -
+__Hudata_bank33 42E 0 ABS 0 udata_bank33 -
+__Hudata_bank34 42E 0 ABS 0 udata_bank34 -
+__Hudata_bank35 42E 0 ABS 0 udata_bank35 -
+__Hudata_bank36 42E 0 ABS 0 udata_bank36 -
+__Hudata_bank37 42E 0 ABS 0 udata_bank37 -
+__Hudata_bank38 42E 0 ABS 0 udata_bank38 -
+__Hudata_bank39 42E 0 ABS 0 udata_bank39 -
+__Hudata_bank40 42E 0 ABS 0 udata_bank40 -
+__Hudata_bank41 42E 0 ABS 0 udata_bank41 -
+__Hudata_bank42 42E 0 ABS 0 udata_bank42 -
+__Hudata_bank43 42E 0 ABS 0 udata_bank43 -
+__Hudata_bank44 42E 0 ABS 0 udata_bank44 -
+__Hudata_bank45 42E 0 ABS 0 udata_bank45 -
+__Hudata_bank46 42E 0 ABS 0 udata_bank46 -
+__Hudata_bank47 42E 0 ABS 0 udata_bank47 -
+__Hudata_bank48 42E 0 ABS 0 udata_bank48 -
+__Hudata_bank49 42E 0 ABS 0 udata_bank49 -
+__Hudata_bank50 42E 0 ABS 0 udata_bank50 -
+__Hudata_bank51 42E 0 ABS 0 udata_bank51 -
+__Hudata_bank52 42E 0 ABS 0 udata_bank52 -
+__Hudata_bank53 42E 0 ABS 0 udata_bank53 -
+__Hudata_bank54 42E 0 ABS 0 udata_bank54 -
+__HresetVec 4 0 CODE 0 resetVec -
+isa$xinst 0 0 ABS 0 - build/default/debug/main.o
+__Hedata 42E 0 ABS 0 edata -
+__Hudata 42E 0 ABS 0 udata -
+__Hconfig 300023 0 CONFIG 4 config -
+__Ledata 42E 0 ABS 0 edata -
+__Ludata 42E 0 ABS 0 udata -
+__LisrDebounce 42E 0 ABS 0 isrDebounce -
+__Hcode 42E 0 CODE 0 code -
+__Hdata 42E 0 ABS 0 data -
+__Lcode 108 0 CODE 0 code -
+__Ldata 42E 0 ABS 0 data -
+__S0 48A 0 ABS 0 - -
+__S1 51C 0 ABS 0 - -
+__S3 0 0 ABS 0 - -
+__Ludata_bank10 42E 0 ABS 0 udata_bank10 -
+__Ludata_bank11 42E 0 ABS 0 udata_bank11 -
+__Ludata_bank12 42E 0 ABS 0 udata_bank12 -
+__Ludata_bank13 42E 0 ABS 0 udata_bank13 -
+__Ludata_bank14 42E 0 ABS 0 udata_bank14 -
+__Ludata_bank15 42E 0 ABS 0 udata_bank15 -
+__Ludata_bank16 42E 0 ABS 0 udata_bank16 -
+__Ludata_bank17 42E 0 ABS 0 udata_bank17 -
+__Ludata_bank18 42E 0 ABS 0 udata_bank18 -
+__Ludata_bank19 42E 0 ABS 0 udata_bank19 -
+__Ludata_bank20 42E 0 ABS 0 udata_bank20 -
+__Ludata_bank21 42E 0 ABS 0 udata_bank21 -
+__Ludata_bank22 42E 0 ABS 0 udata_bank22 -
+__Ludata_bank23 42E 0 ABS 0 udata_bank23 -
+__Ludata_bank24 42E 0 ABS 0 udata_bank24 -
+__Ludata_bank25 42E 0 ABS 0 udata_bank25 -
+__Ludata_bank26 42E 0 ABS 0 udata_bank26 -
+__Ludata_bank27 42E 0 ABS 0 udata_bank27 -
+__Ludata_bank28 42E 0 ABS 0 udata_bank28 -
+__Ludata_bank29 42E 0 ABS 0 udata_bank29 -
+__Ludata_bank30 42E 0 ABS 0 udata_bank30 -
+__Ludata_bank31 42E 0 ABS 0 udata_bank31 -
+__Ludata_bank32 42E 0 ABS 0 udata_bank32 -
+__Ludata_bank33 42E 0 ABS 0 udata_bank33 -
+__Ludata_bank34 42E 0 ABS 0 udata_bank34 -
+__Ludata_bank35 42E 0 ABS 0 udata_bank35 -
+__Ludata_bank36 42E 0 ABS 0 udata_bank36 -
+__Ludata_bank37 42E 0 ABS 0 udata_bank37 -
+__Ludata_bank38 42E 0 ABS 0 udata_bank38 -
+__Ludata_bank39 42E 0 ABS 0 udata_bank39 -
+__Ludata_bank40 42E 0 ABS 0 udata_bank40 -
+__Ludata_bank41 42E 0 ABS 0 udata_bank41 -
+__Ludata_bank42 42E 0 ABS 0 udata_bank42 -
+__Ludata_bank43 42E 0 ABS 0 udata_bank43 -
+__Ludata_bank44 42E 0 ABS 0 udata_bank44 -
+__Ludata_bank45 42E 0 ABS 0 udata_bank45 -
+__Ludata_bank46 42E 0 ABS 0 udata_bank46 -
+__Ludata_bank47 42E 0 ABS 0 udata_bank47 -
+__Ludata_bank48 42E 0 ABS 0 udata_bank48 -
+__Ludata_bank49 42E 0 ABS 0 udata_bank49 -
+__Ludata_bank50 42E 0 ABS 0 udata_bank50 -
+__Ludata_bank51 42E 0 ABS 0 udata_bank51 -
+__Ludata_bank52 42E 0 ABS 0 udata_bank52 -
+__Ludata_bank53 42E 0 ABS 0 udata_bank53 -
+__Ludata_bank54 42E 0 ABS 0 udata_bank54 -
+__Lconfig 0 0 CONFIG 4 config -
+isa$std 1 0 ABS 0 - build/default/debug/main.o
+__HisrDebounce 42E 0 ABS 0 isrDebounce -
+__Lspace_0 0 0 ABS 0 - -
+__Lspace_1 0 0 ABS 0 - -
+__Lspace_3 0 0 ABS 0 - -
+__Lspace_4 0 0 ABS 0 - -
+__Ludata_bank5 42E 0 ABS 0 udata_bank5 -
+__Ludata_bank6 42E 0 ABS 0 udata_bank6 -
+__Ludata_bank7 42E 0 ABS 0 udata_bank7 -
+__Ludata_bank8 42E 0 ABS 0 udata_bank8 -
+__Ludata_bank9 42E 0 ABS 0 udata_bank9 -
+__H__absolute__ 0 0 ABS 0 __absolute__ -
+__Hudata_acs 42E 0 ABS 0 udata_acs -
+__Hivt 42 0 CODE 0 ivt -
+__Livt 8 0 CODE 0 ivt -
+__Ludata_acs 42E 0 ABS 0 udata_acs -
+# %SPLITSTAB Section
+# This section enumerates all the psect splits performed by the assembler.
+# The beginning of the section is indicated by %SPLITSTAB.
+# Each line is a record a particular split, where the parent psect is on
+# the left and the child on the right.  Note that a child psect is always
+# split form the top of the parent psect. All splits from a given parent
+# are listed in the order in which they occurred.
+%SPLITSTAB
+# %DABS Section
+# This section contains a table of all usuage of the assember
+# directive DABS in the program. Each line has the following format:
+#   <name> <space> <address> <size>
+# If the DABS was originally labelled then that shall be <name>,
+# otherwise name will be "-".  The <space> number is in decimal.
+# <address> and <size> are in byte units as unqaulified hexadecimal
+%DABS
+# %SEGMENTS Section
+# This sections enumerates the segments of the program.  Each segment
+# is described on a single line as follows:
+#    <name> <space> <link address> <file address> <size> <delta>
+# Addresses and size are in unqualified hexadecimal.  The link address
+# and size are in units of delta. The file address is in units of bytes.
+# All other numeric quantities are in decimal.
+%SEGMENTS
+ivt 0 8 8 3A 1
+resetVec 0 0 0 4 1
+isrDebounce 0 430 430 5A 1
+code 0 108 108 326 1
+udata_acs 1 500 500 1C 1
+# %NOTES Section
+# This section contains data of all the note-psects.  The beginning of the section
+# is indicated by %NOTES. The first line indicates the name and decimal
+# byte-length of the first note-psect, e.g.
+#   $codecov_info_hdr 16
+# Each line that follows contains the byte-data of the psect in hexadecimal as a
+# space-separated list. These lines are limited to 16 bytes of data.
+%NOTES

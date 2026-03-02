@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/pinconfig.inc</file>
+            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/servo_hw.inc</file>
+            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/wait.inc</file>
+            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/servo.inc</file>
+            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/main.asm</file>
+            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/debounce.inc</file>
+            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/can_torque.inc</file>
+        </group>
+    </open-files>
+</project-private>

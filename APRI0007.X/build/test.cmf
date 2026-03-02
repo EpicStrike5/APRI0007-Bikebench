@@ -1,0 +1,408 @@
+%CMF
+# %PSECTS Section
+# For each object file, details of its psects are enumerated here.
+# The begining of the section is indicated by %PSECTS.  The first
+# line indicates the name of the first object file, e.g.
+#    $foo.obj
+# Each line that follows describes a psect in that object file, until
+# the next object file.  The lines that describe a psect have the
+# format:
+#    <psect name> <class name> <space> <link address> <load addresses> <length> <delta> <reloc>
+# All addresses and the length are given in unqualified hexadecimal
+# in delta units.  Any other numeric values are decimal.
+%PSECTS
+$build\main.o
+resetVec CODE 0 0 0 4 1 2
+code CODE 0 1FED0 1FED0 130 1 2
+udata_acs COMRAM 1 500 500 8 1 1
+config CONFIG 4 300000 300000 23 1 1
+# %UNUSED Section
+# This section enumerates the unused ranges of each CLASS. Each entry
+# is described on a single line as follows:
+#    <class name> <range> <delta>
+# Addresses given in the range are in hexadecimal and units of delta.
+%UNUSED
+RAM 560-36FF 1
+SFR 4-4FF 1
+SFR 3700-3FFF 1
+BANK5 560-5FF 1
+BANK6 600-6FF 1
+BANK7 700-7FF 1
+BANK8 800-8FF 1
+BANK9 900-9FF 1
+CONST 4-1FECF 1
+IDLOC 200000-20003F 1
+SMALLCONST 4000-FFFF 1
+SMALLCONST 14000-1FECF 1
+CODE 4-1FECF 1
+BANK10 A00-AFF 1
+BANK11 B00-BFF 1
+BANK12 C00-CFF 1
+BANK13 D00-DFF 1
+BANK14 E00-EFF 1
+BANK15 F00-FFF 1
+BANK16 1000-10FF 1
+BANK17 1100-11FF 1
+BANK18 1200-12FF 1
+BANK19 1300-13FF 1
+BANK20 1400-14FF 1
+BANK21 1500-15FF 1
+BANK22 1600-16FF 1
+BANK23 1700-17FF 1
+BANK24 1800-18FF 1
+BANK25 1900-19FF 1
+BANK26 1A00-1AFF 1
+BANK27 1B00-1BFF 1
+BANK28 1C00-1CFF 1
+BANK29 1D00-1DFF 1
+BANK30 1E00-1EFF 1
+BANK31 1F00-1FFF 1
+BANK32 2000-20FF 1
+BANK33 2100-21FF 1
+BANK34 2200-22FF 1
+BANK35 2300-23FF 1
+BANK36 2400-24FF 1
+BANK37 2500-25FF 1
+BANK38 2600-26FF 1
+BANK39 2700-27FF 1
+BANK40 2800-28FF 1
+BANK41 2900-29FF 1
+BANK42 2A00-2AFF 1
+BANK43 2B00-2BFF 1
+BANK44 2C00-2CFF 1
+BANK45 2D00-2DFF 1
+BANK46 2E00-2EFF 1
+BANK47 2F00-2FFF 1
+BANK48 3000-30FF 1
+BANK49 3100-31FF 1
+BANK50 3200-32FF 1
+BANK51 3300-33FF 1
+BANK52 3400-34FF 1
+BANK53 3500-35FF 1
+BANK54 3600-36FF 1
+BIGRAM 500-36FF 1
+BIGSFR 4-4FF 1
+BIGSFR 3700-3FFF 1
+COMRAM 508-55F 1
+CONFIG 300023-300023 1
+EEDATA 380000-3803FF 1
+MEDIUMCONST 4000-FFFF 1
+MEDIUMCONST 14000-1FECF 1
+# %LINETAB Section
+# This section enumerates the file/line to address mappings.
+# The beginning of the section is indicated by %LINETAB.
+# The first line indicates the name of the first object file, e.g.
+#   $foo.obj
+# Each line that follows describes a single mapping until the next
+# object file.  Mappings have the following format:
+#    <address> <psect name> <class name> ><line number>:<file name>
+# The address is absolute and given given in unqualified hex 
+# in delta units of the psect. All mappings within an object file
+# are in ascending order of addresses.
+# All other numeric values are in decimal.
+%LINETAB
+$build\main.o
+0 resetVec CODE >40:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FED0 code CODE >33:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FED2 code CODE >34:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FED4 code CODE >36:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FED6 code CODE >37:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FED8 code CODE >39:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEDA code CODE >40:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEDC code CODE >42:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEDE code CODE >43:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEE0 code CODE >44:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEE2 code CODE >45:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEE6 code CODE >47:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEE8 code CODE >48:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEEA code CODE >49:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEEC code CODE >50:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEF0 code CODE >52:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEF2 code CODE >53:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEF4 code CODE >55:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEF6 code CODE >56:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEFA code CODE >58:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEFC code CODE >59:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FEFE code CODE >60:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF02 code CODE >62:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF04 code CODE >65:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF06 code CODE >66:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF08 code CODE >67:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF0A code CODE >68:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF0C code CODE >69:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF0E code CODE >70:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF12 code CODE >77:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF14 code CODE >78:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF16 code CODE >80:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF18 code CODE >81:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF1C code CODE >82:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF1E code CODE >83:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF22 code CODE >84:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF24 code CODE >85:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF28 code CODE >86:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF2A code CODE >87:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF2E code CODE >88:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF30 code CODE >89:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF34 code CODE >90:C:\Users\Thomas\MPLABXProjects\APRI0007.X/wait.inc
+1FF36 code CODE >45:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF38 code CODE >46:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF3A code CODE >49:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF3C code CODE >50:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF3E code CODE >53:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF40 code CODE >54:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF42 code CODE >57:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF44 code CODE >58:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF46 code CODE >59:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF48 code CODE >66:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF4A code CODE >67:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF4C code CODE >84:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF4E code CODE >85:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF50 code CODE >89:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF52 code CODE >90:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF54 code CODE >92:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF56 code CODE >93:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF58 code CODE >95:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF5A code CODE >96:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF5E code CODE >97:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF60 code CODE >98:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF64 code CODE >103:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF66 code CODE >104:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF68 code CODE >105:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF6A code CODE >107:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF6C code CODE >108:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF6E code CODE >110:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF70 code CODE >111:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF74 code CODE >112:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF76 code CODE >113:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF78 code CODE >114:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF7A code CODE >115:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF7C code CODE >116:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF80 code CODE >122:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF82 code CODE >123:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF84 code CODE >126:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF86 code CODE >127:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF8A code CODE >128:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF8C code CODE >135:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF8E code CODE >136:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF90 code CODE >137:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF92 code CODE >138:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF94 code CODE >140:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF96 code CODE >141:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF98 code CODE >142:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF9A code CODE >149:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF9C code CODE >150:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FF9E code CODE >151:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FFA0 code CODE >152:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FFA2 code CODE >154:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FFA4 code CODE >155:C:\Users\Thomas\MPLABXProjects\APRI0007.X/servo.inc
+1FFA6 code CODE >57:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFA8 code CODE >58:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFAA code CODE >59:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFAC code CODE >60:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFAE code CODE >61:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFB0 code CODE >62:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFB2 code CODE >63:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFB4 code CODE >64:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFB6 code CODE >65:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFB8 code CODE >68:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFBA code CODE >69:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFBC code CODE >70:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFBE code CODE >71:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFC0 code CODE >72:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFC2 code CODE >73:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFC4 code CODE >76:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFC8 code CODE >79:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFCC code CODE >80:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFD0 code CODE >81:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFD4 code CODE >90:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFD6 code CODE >91:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFD8 code CODE >92:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFDC code CODE >95:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFDE code CODE >96:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFE0 code CODE >97:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFE4 code CODE >100:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFE8 code CODE >102:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFEC code CODE >108:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFF0 code CODE >109:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFF2 code CODE >110:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFF4 code CODE >111:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFF6 code CODE >114:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFFA code CODE >115:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFFC code CODE >116:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+1FFFE code CODE >117:C:\Users\Thomas\MPLABXProjects\APRI0007.X\main.asm
+# %SYMTAB Section
+# An enumeration of all symbols in the program.
+# The beginning of the section is indicated by %SYMTAB.
+# Each line describes a single symbol as follows:
+#    <label> <value> [-]<load-adj> <class> <space> <psect> <file-name>
+# The value and load-adj are both in unqualified hexadecimal.
+# All other numeric values are in decimal.  The load-adj is the
+# quantity one needs to add to the symbol value in order to obtain the load
+# address of the symbol.  This value may be signed. If the symbol
+# was defined in a psect then <psect> will be "-". File-name
+# is the name of the object file in which the symbol was defined.
+%SYMTAB
+__Hspace_0 20000 0 ABS 0 - -
+__Hspace_1 508 0 ABS 0 - -
+__Hspace_3 0 0 ABS 0 - -
+__Hspace_4 600023 0 ABS 0 - -
+__Hudata_bank5 4 0 ABS 0 udata_bank5 -
+__Hudata_bank6 4 0 ABS 0 udata_bank6 -
+__Hudata_bank7 4 0 ABS 0 udata_bank7 -
+__Hudata_bank8 4 0 ABS 0 udata_bank8 -
+__Hudata_bank9 4 0 ABS 0 udata_bank9 -
+__L__absolute__ 0 0 ABS 0 __absolute__ -
+__LresetVec 0 0 CODE 0 resetVec -
+__Hudata_bank10 4 0 ABS 0 udata_bank10 -
+__Hudata_bank11 4 0 ABS 0 udata_bank11 -
+__Hudata_bank12 4 0 ABS 0 udata_bank12 -
+__Hudata_bank13 4 0 ABS 0 udata_bank13 -
+__Hudata_bank14 4 0 ABS 0 udata_bank14 -
+__Hudata_bank15 4 0 ABS 0 udata_bank15 -
+__Hudata_bank16 4 0 ABS 0 udata_bank16 -
+__Hudata_bank17 4 0 ABS 0 udata_bank17 -
+__Hudata_bank18 4 0 ABS 0 udata_bank18 -
+__Hudata_bank19 4 0 ABS 0 udata_bank19 -
+__Hudata_bank20 4 0 ABS 0 udata_bank20 -
+__Hudata_bank21 4 0 ABS 0 udata_bank21 -
+__Hudata_bank22 4 0 ABS 0 udata_bank22 -
+__Hudata_bank23 4 0 ABS 0 udata_bank23 -
+__Hudata_bank24 4 0 ABS 0 udata_bank24 -
+__Hudata_bank25 4 0 ABS 0 udata_bank25 -
+__Hudata_bank26 4 0 ABS 0 udata_bank26 -
+__Hudata_bank27 4 0 ABS 0 udata_bank27 -
+__Hudata_bank28 4 0 ABS 0 udata_bank28 -
+__Hudata_bank29 4 0 ABS 0 udata_bank29 -
+__Hudata_bank30 4 0 ABS 0 udata_bank30 -
+__Hudata_bank31 4 0 ABS 0 udata_bank31 -
+__Hudata_bank32 4 0 ABS 0 udata_bank32 -
+__Hudata_bank33 4 0 ABS 0 udata_bank33 -
+__Hudata_bank34 4 0 ABS 0 udata_bank34 -
+__Hudata_bank35 4 0 ABS 0 udata_bank35 -
+__Hudata_bank36 4 0 ABS 0 udata_bank36 -
+__Hudata_bank37 4 0 ABS 0 udata_bank37 -
+__Hudata_bank38 4 0 ABS 0 udata_bank38 -
+__Hudata_bank39 4 0 ABS 0 udata_bank39 -
+__Hudata_bank40 4 0 ABS 0 udata_bank40 -
+__Hudata_bank41 4 0 ABS 0 udata_bank41 -
+__Hudata_bank42 4 0 ABS 0 udata_bank42 -
+__Hudata_bank43 4 0 ABS 0 udata_bank43 -
+__Hudata_bank44 4 0 ABS 0 udata_bank44 -
+__Hudata_bank45 4 0 ABS 0 udata_bank45 -
+__Hudata_bank46 4 0 ABS 0 udata_bank46 -
+__Hudata_bank47 4 0 ABS 0 udata_bank47 -
+__Hudata_bank48 4 0 ABS 0 udata_bank48 -
+__Hudata_bank49 4 0 ABS 0 udata_bank49 -
+__Hudata_bank50 4 0 ABS 0 udata_bank50 -
+__Hudata_bank51 4 0 ABS 0 udata_bank51 -
+__Hudata_bank52 4 0 ABS 0 udata_bank52 -
+__Hudata_bank53 4 0 ABS 0 udata_bank53 -
+__Hudata_bank54 4 0 ABS 0 udata_bank54 -
+__HresetVec 4 0 CODE 0 resetVec -
+isa$xinst 0 0 ABS 0 - build\main.o
+__Hedata 4 0 ABS 0 edata -
+__Hudata 4 0 ABS 0 udata -
+__Hconfig 300023 0 CONFIG 4 config -
+__Ledata 4 0 ABS 0 edata -
+__Ludata 4 0 ABS 0 udata -
+__Hcode 4 0 ABS 0 code -
+__Hdata 4 0 ABS 0 data -
+__Lcode 4 0 ABS 0 code -
+__Ldata 4 0 ABS 0 data -
+__S0 20000 0 ABS 0 - -
+__S1 508 0 ABS 0 - -
+__S3 0 0 ABS 0 - -
+__Ludata_bank10 4 0 ABS 0 udata_bank10 -
+__Ludata_bank11 4 0 ABS 0 udata_bank11 -
+__Ludata_bank12 4 0 ABS 0 udata_bank12 -
+__Ludata_bank13 4 0 ABS 0 udata_bank13 -
+__Ludata_bank14 4 0 ABS 0 udata_bank14 -
+__Ludata_bank15 4 0 ABS 0 udata_bank15 -
+__Ludata_bank16 4 0 ABS 0 udata_bank16 -
+__Ludata_bank17 4 0 ABS 0 udata_bank17 -
+__Ludata_bank18 4 0 ABS 0 udata_bank18 -
+__Ludata_bank19 4 0 ABS 0 udata_bank19 -
+__Ludata_bank20 4 0 ABS 0 udata_bank20 -
+__Ludata_bank21 4 0 ABS 0 udata_bank21 -
+__Ludata_bank22 4 0 ABS 0 udata_bank22 -
+__Ludata_bank23 4 0 ABS 0 udata_bank23 -
+__Ludata_bank24 4 0 ABS 0 udata_bank24 -
+__Ludata_bank25 4 0 ABS 0 udata_bank25 -
+__Ludata_bank26 4 0 ABS 0 udata_bank26 -
+__Ludata_bank27 4 0 ABS 0 udata_bank27 -
+__Ludata_bank28 4 0 ABS 0 udata_bank28 -
+__Ludata_bank29 4 0 ABS 0 udata_bank29 -
+__Ludata_bank30 4 0 ABS 0 udata_bank30 -
+__Ludata_bank31 4 0 ABS 0 udata_bank31 -
+__Ludata_bank32 4 0 ABS 0 udata_bank32 -
+__Ludata_bank33 4 0 ABS 0 udata_bank33 -
+__Ludata_bank34 4 0 ABS 0 udata_bank34 -
+__Ludata_bank35 4 0 ABS 0 udata_bank35 -
+__Ludata_bank36 4 0 ABS 0 udata_bank36 -
+__Ludata_bank37 4 0 ABS 0 udata_bank37 -
+__Ludata_bank38 4 0 ABS 0 udata_bank38 -
+__Ludata_bank39 4 0 ABS 0 udata_bank39 -
+__Ludata_bank40 4 0 ABS 0 udata_bank40 -
+__Ludata_bank41 4 0 ABS 0 udata_bank41 -
+__Ludata_bank42 4 0 ABS 0 udata_bank42 -
+__Ludata_bank43 4 0 ABS 0 udata_bank43 -
+__Ludata_bank44 4 0 ABS 0 udata_bank44 -
+__Ludata_bank45 4 0 ABS 0 udata_bank45 -
+__Ludata_bank46 4 0 ABS 0 udata_bank46 -
+__Ludata_bank47 4 0 ABS 0 udata_bank47 -
+__Ludata_bank48 4 0 ABS 0 udata_bank48 -
+__Ludata_bank49 4 0 ABS 0 udata_bank49 -
+__Ludata_bank50 4 0 ABS 0 udata_bank50 -
+__Ludata_bank51 4 0 ABS 0 udata_bank51 -
+__Ludata_bank52 4 0 ABS 0 udata_bank52 -
+__Ludata_bank53 4 0 ABS 0 udata_bank53 -
+__Ludata_bank54 4 0 ABS 0 udata_bank54 -
+__Lconfig 0 0 CONFIG 4 config -
+isa$std 1 0 ABS 0 - build\main.o
+__Lspace_0 0 0 ABS 0 - -
+__Lspace_1 0 0 ABS 0 - -
+__Lspace_3 0 0 ABS 0 - -
+__Lspace_4 0 0 ABS 0 - -
+__Ludata_bank5 4 0 ABS 0 udata_bank5 -
+__Ludata_bank6 4 0 ABS 0 udata_bank6 -
+__Ludata_bank7 4 0 ABS 0 udata_bank7 -
+__Ludata_bank8 4 0 ABS 0 udata_bank8 -
+__Ludata_bank9 4 0 ABS 0 udata_bank9 -
+__H__absolute__ 0 0 ABS 0 __absolute__ -
+__Hudata_acs 4 0 ABS 0 udata_acs -
+__Ludata_acs 4 0 ABS 0 udata_acs -
+# %SPLITSTAB Section
+# This section enumerates all the psect splits performed by the assembler.
+# The beginning of the section is indicated by %SPLITSTAB.
+# Each line is a record a particular split, where the parent psect is on
+# the left and the child on the right.  Note that a child psect is always
+# split form the top of the parent psect. All splits from a given parent
+# are listed in the order in which they occurred.
+%SPLITSTAB
+# %DABS Section
+# This section contains a table of all usuage of the assember
+# directive DABS in the program. Each line has the following format:
+#   <name> <space> <address> <size>
+# If the DABS was originally labelled then that shall be <name>,
+# otherwise name will be "-".  The <space> number is in decimal.
+# <address> and <size> are in byte units as unqaulified hexadecimal
+%DABS
+# %SEGMENTS Section
+# This sections enumerates the segments of the program.  Each segment
+# is described on a single line as follows:
+#    <name> <space> <link address> <file address> <size> <delta>
+# Addresses and size are in unqualified hexadecimal.  The link address
+# and size are in units of delta. The file address is in units of bytes.
+# All other numeric quantities are in decimal.
+%SEGMENTS
+resetVec 0 0 0 4 1
+code 0 1FED0 1FED0 130 1
+udata_acs 1 500 500 8 1
+# %NOTES Section
+# This section contains data of all the note-psects.  The beginning of the section
+# is indicated by %NOTES. The first line indicates the name and decimal
+# byte-length of the first note-psect, e.g.
+#   $codecov_info_hdr 16
+# Each line that follows contains the byte-data of the psect in hexadecimal as a
+# space-separated list. These lines are limited to 16 bytes of data.
+%NOTES
