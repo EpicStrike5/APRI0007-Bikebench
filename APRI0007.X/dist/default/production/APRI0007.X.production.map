@@ -6,7 +6,7 @@ Linker command line:
   --edf=C:\Program Files\Microchip\xc8\v3.10\pic\dat\20250813170317_en.msgs \
   -cs -h+dist/default/production\APRI0007.X.production.sym \
   --cmf=dist/default/production\APRI0007.X.production.cmf -z -Q18F47Q84 \
-  -oC:\Users\Thomas\AppData\Local\Temp\xcAskk8.0\driver_tmp_3.o \
+  -oC:\Users\Thomas\AppData\Local\Temp\xcAsj7s.0\driver_tmp_3.o \
   -presetVec=0h -pivt=08h -pcode=108h --fixupoverflow=error \
   -ver=XC8 PIC(R) Assembler --fixupoverflow=lstwarn \
   -Mdist/default/production/APRI0007.X.production.map -E1 \
@@ -45,20 +45,20 @@ Machine type is 18F47Q84
                 Name                               Link     Load   Length Selector   Space Scale
 build/default/production/main.o
                 config                           300000   300000       23        0       4
-                isrDebounce                         454      454       30      115       0
+                isrDebounce                         450      450       30      114       0
                 ivt                                   8        8       3A        4       0
-                isrServo                            484      484       2C      115       0
+                isrServo                            480      480       18      114       0
                 resetVec                              0        0        4        0       0
-                code                                108      108      34A       84       0
-                udata_acs                           500      500       1C      500       1
+                code                                108      108      346       84       0
+                udata_acs                           500      500       1B      500       1
 
 TOTAL           Name                               Link     Load   Length     Space
         CLASS   CODE           
-                isrDebounce                         454      454       30         0
+                isrDebounce                         450      450       30         0
                 ivt                                   8        8       3A         0
-                isrServo                            484      484       2C         0
+                isrServo                            480      480       18         0
                 resetVec                              0        0        4         0
-                code                                108      108      34A         0
+                code                                108      108      346         0
 
         CLASS   CONST          
 
@@ -67,7 +67,7 @@ TOTAL           Name                               Link     Load   Length     Sp
         CLASS   MEDIUMCONST    
 
         CLASS   COMRAM         
-                udata_acs                           500      500       1C         1
+                udata_acs                           500      500       1B         1
 
         CLASS   ABS1           
 
@@ -192,9 +192,9 @@ SEGMENTS        Name                           Load    Length   Top    Selector 
 
                 resetVec                       000000  000004  000004         0       0  CODE    
                 ivt                            000008  00003A  000042         4       0  CODE    
-                code                           000108  00034A  000452        84       0  CODE    
-                isrDebounce                    000454  00005C  0004B0       115       0  CODE    
-                udata_acs                      000500  00001C  00051C       500       1  COMRAM  
+                code                           000108  000346  00044E        84       0  CODE    
+                isrDebounce                    000450  000048  000498       114       0  CODE    
+                udata_acs                      000500  00001B  00051B       500       1  COMRAM  
 
 
 UNUSED ADDRESS RANGES
@@ -253,19 +253,19 @@ UNUSED ADDRESS RANGES
         BIGRAM           000500-0036FF             3200
         BIGSFR           000004-000007                4
                          000042-000107               C6
-                         000452-000453                2
-                         0004B0-0004FF               50
+                         00044E-00044F                2
+                         000498-0004FF               68
                          003700-003FFF              900
         CODE             000004-000007                4
                          000042-000107               C6
-                         000452-000453                2
-                         0004B0-01FFFF            1FB50
-        COMRAM           00051C-00055F               44
+                         00044E-00044F                2
+                         000498-01FFFF            1FB68
+        COMRAM           00051B-00055F               45
         CONFIG           300023-300023                1
         CONST            000004-000007                4
                          000042-000107               C6
-                         000452-000453                2
-                         0004B0-01FFFF            1FB50
+                         00044E-00044F                2
+                         000498-01FFFF            1FB68
         EEDATA           380000-3803FF              400
         IDLOC            200000-20003F               40
         MEDIUMCONST      004000-00FFFF             C000
@@ -273,79 +273,79 @@ UNUSED ADDRESS RANGES
         RAM              000560-0036FF              100
         SFR              000004-000007                4
                          000042-000107               BE
-                         000452-000453                2
-                         0004B0-0004FF               50
+                         00044E-00044F                2
+                         000498-0004FF               68
                          003700-003FFF              100
         SMALLCONST       004000-00FFFF              100
                          014000-01FFFF              100
 
                                   Symbol Table
 
-__H__absolute__ __absolute__ 000000  __Hcode         code         000452
-__Hconfig       config       300023  __Hdata         data         000452
-__Hedata        edata        000452  __HisrDebounce  isrDebounce  000452
-__HisrServo     isrServo     000452  __Hivt          ivt          000042
-__HresetVec     resetVec     000004  __Hspace_0      (abs)        0004B0
-__Hspace_1      (abs)        00051C  __Hspace_3      (abs)        000000
-__Hspace_4      (abs)        600023  __Hudata        udata        000452
-__Hudata_acs    udata_acs    000452  __Hudata_bank10 udata_bank10 000452
-__Hudata_bank11 udata_bank11 000452  __Hudata_bank12 udata_bank12 000452
-__Hudata_bank13 udata_bank13 000452  __Hudata_bank14 udata_bank14 000452
-__Hudata_bank15 udata_bank15 000452  __Hudata_bank16 udata_bank16 000452
-__Hudata_bank17 udata_bank17 000452  __Hudata_bank18 udata_bank18 000452
-__Hudata_bank19 udata_bank19 000452  __Hudata_bank20 udata_bank20 000452
-__Hudata_bank21 udata_bank21 000452  __Hudata_bank22 udata_bank22 000452
-__Hudata_bank23 udata_bank23 000452  __Hudata_bank24 udata_bank24 000452
-__Hudata_bank25 udata_bank25 000452  __Hudata_bank26 udata_bank26 000452
-__Hudata_bank27 udata_bank27 000452  __Hudata_bank28 udata_bank28 000452
-__Hudata_bank29 udata_bank29 000452  __Hudata_bank30 udata_bank30 000452
-__Hudata_bank31 udata_bank31 000452  __Hudata_bank32 udata_bank32 000452
-__Hudata_bank33 udata_bank33 000452  __Hudata_bank34 udata_bank34 000452
-__Hudata_bank35 udata_bank35 000452  __Hudata_bank36 udata_bank36 000452
-__Hudata_bank37 udata_bank37 000452  __Hudata_bank38 udata_bank38 000452
-__Hudata_bank39 udata_bank39 000452  __Hudata_bank40 udata_bank40 000452
-__Hudata_bank41 udata_bank41 000452  __Hudata_bank42 udata_bank42 000452
-__Hudata_bank43 udata_bank43 000452  __Hudata_bank44 udata_bank44 000452
-__Hudata_bank45 udata_bank45 000452  __Hudata_bank46 udata_bank46 000452
-__Hudata_bank47 udata_bank47 000452  __Hudata_bank48 udata_bank48 000452
-__Hudata_bank49 udata_bank49 000452  __Hudata_bank5  udata_bank5  000452
-__Hudata_bank50 udata_bank50 000452  __Hudata_bank51 udata_bank51 000452
-__Hudata_bank52 udata_bank52 000452  __Hudata_bank53 udata_bank53 000452
-__Hudata_bank54 udata_bank54 000452  __Hudata_bank6  udata_bank6  000452
-__Hudata_bank7  udata_bank7  000452  __Hudata_bank8  udata_bank8  000452
-__Hudata_bank9  udata_bank9  000452  __L__absolute__ __absolute__ 000000
+__H__absolute__ __absolute__ 000000  __Hcode         code         00044E
+__Hconfig       config       300023  __Hdata         data         00044E
+__Hedata        edata        00044E  __HisrDebounce  isrDebounce  00044E
+__HisrServo     isrServo     00044E  __Hivt          ivt          000042
+__HresetVec     resetVec     000004  __Hspace_0      (abs)        000498
+__Hspace_1      (abs)        00051B  __Hspace_3      (abs)        000000
+__Hspace_4      (abs)        600023  __Hudata        udata        00044E
+__Hudata_acs    udata_acs    00044E  __Hudata_bank10 udata_bank10 00044E
+__Hudata_bank11 udata_bank11 00044E  __Hudata_bank12 udata_bank12 00044E
+__Hudata_bank13 udata_bank13 00044E  __Hudata_bank14 udata_bank14 00044E
+__Hudata_bank15 udata_bank15 00044E  __Hudata_bank16 udata_bank16 00044E
+__Hudata_bank17 udata_bank17 00044E  __Hudata_bank18 udata_bank18 00044E
+__Hudata_bank19 udata_bank19 00044E  __Hudata_bank20 udata_bank20 00044E
+__Hudata_bank21 udata_bank21 00044E  __Hudata_bank22 udata_bank22 00044E
+__Hudata_bank23 udata_bank23 00044E  __Hudata_bank24 udata_bank24 00044E
+__Hudata_bank25 udata_bank25 00044E  __Hudata_bank26 udata_bank26 00044E
+__Hudata_bank27 udata_bank27 00044E  __Hudata_bank28 udata_bank28 00044E
+__Hudata_bank29 udata_bank29 00044E  __Hudata_bank30 udata_bank30 00044E
+__Hudata_bank31 udata_bank31 00044E  __Hudata_bank32 udata_bank32 00044E
+__Hudata_bank33 udata_bank33 00044E  __Hudata_bank34 udata_bank34 00044E
+__Hudata_bank35 udata_bank35 00044E  __Hudata_bank36 udata_bank36 00044E
+__Hudata_bank37 udata_bank37 00044E  __Hudata_bank38 udata_bank38 00044E
+__Hudata_bank39 udata_bank39 00044E  __Hudata_bank40 udata_bank40 00044E
+__Hudata_bank41 udata_bank41 00044E  __Hudata_bank42 udata_bank42 00044E
+__Hudata_bank43 udata_bank43 00044E  __Hudata_bank44 udata_bank44 00044E
+__Hudata_bank45 udata_bank45 00044E  __Hudata_bank46 udata_bank46 00044E
+__Hudata_bank47 udata_bank47 00044E  __Hudata_bank48 udata_bank48 00044E
+__Hudata_bank49 udata_bank49 00044E  __Hudata_bank5  udata_bank5  00044E
+__Hudata_bank50 udata_bank50 00044E  __Hudata_bank51 udata_bank51 00044E
+__Hudata_bank52 udata_bank52 00044E  __Hudata_bank53 udata_bank53 00044E
+__Hudata_bank54 udata_bank54 00044E  __Hudata_bank6  udata_bank6  00044E
+__Hudata_bank7  udata_bank7  00044E  __Hudata_bank8  udata_bank8  00044E
+__Hudata_bank9  udata_bank9  00044E  __L__absolute__ __absolute__ 000000
 __Lcode         code         000108  __Lconfig       config       000000
-__Ldata         data         000452  __Ledata        edata        000452
-__LisrDebounce  isrDebounce  000452  __LisrServo     isrServo     000452
+__Ldata         data         00044E  __Ledata        edata        00044E
+__LisrDebounce  isrDebounce  00044E  __LisrServo     isrServo     00044E
 __Livt          ivt          000008  __LresetVec     resetVec     000000
 __Lspace_0      (abs)        000000  __Lspace_1      (abs)        000000
 __Lspace_3      (abs)        000000  __Lspace_4      (abs)        000000
-__Ludata        udata        000452  __Ludata_acs    udata_acs    000452
-__Ludata_bank10 udata_bank10 000452  __Ludata_bank11 udata_bank11 000452
-__Ludata_bank12 udata_bank12 000452  __Ludata_bank13 udata_bank13 000452
-__Ludata_bank14 udata_bank14 000452  __Ludata_bank15 udata_bank15 000452
-__Ludata_bank16 udata_bank16 000452  __Ludata_bank17 udata_bank17 000452
-__Ludata_bank18 udata_bank18 000452  __Ludata_bank19 udata_bank19 000452
-__Ludata_bank20 udata_bank20 000452  __Ludata_bank21 udata_bank21 000452
-__Ludata_bank22 udata_bank22 000452  __Ludata_bank23 udata_bank23 000452
-__Ludata_bank24 udata_bank24 000452  __Ludata_bank25 udata_bank25 000452
-__Ludata_bank26 udata_bank26 000452  __Ludata_bank27 udata_bank27 000452
-__Ludata_bank28 udata_bank28 000452  __Ludata_bank29 udata_bank29 000452
-__Ludata_bank30 udata_bank30 000452  __Ludata_bank31 udata_bank31 000452
-__Ludata_bank32 udata_bank32 000452  __Ludata_bank33 udata_bank33 000452
-__Ludata_bank34 udata_bank34 000452  __Ludata_bank35 udata_bank35 000452
-__Ludata_bank36 udata_bank36 000452  __Ludata_bank37 udata_bank37 000452
-__Ludata_bank38 udata_bank38 000452  __Ludata_bank39 udata_bank39 000452
-__Ludata_bank40 udata_bank40 000452  __Ludata_bank41 udata_bank41 000452
-__Ludata_bank42 udata_bank42 000452  __Ludata_bank43 udata_bank43 000452
-__Ludata_bank44 udata_bank44 000452  __Ludata_bank45 udata_bank45 000452
-__Ludata_bank46 udata_bank46 000452  __Ludata_bank47 udata_bank47 000452
-__Ludata_bank48 udata_bank48 000452  __Ludata_bank49 udata_bank49 000452
-__Ludata_bank5  udata_bank5  000452  __Ludata_bank50 udata_bank50 000452
-__Ludata_bank51 udata_bank51 000452  __Ludata_bank52 udata_bank52 000452
-__Ludata_bank53 udata_bank53 000452  __Ludata_bank54 udata_bank54 000452
-__Ludata_bank6  udata_bank6  000452  __Ludata_bank7  udata_bank7  000452
-__Ludata_bank8  udata_bank8  000452  __Ludata_bank9  udata_bank9  000452
-__S0            (abs)        0004B0  __S1            (abs)        00051C
+__Ludata        udata        00044E  __Ludata_acs    udata_acs    00044E
+__Ludata_bank10 udata_bank10 00044E  __Ludata_bank11 udata_bank11 00044E
+__Ludata_bank12 udata_bank12 00044E  __Ludata_bank13 udata_bank13 00044E
+__Ludata_bank14 udata_bank14 00044E  __Ludata_bank15 udata_bank15 00044E
+__Ludata_bank16 udata_bank16 00044E  __Ludata_bank17 udata_bank17 00044E
+__Ludata_bank18 udata_bank18 00044E  __Ludata_bank19 udata_bank19 00044E
+__Ludata_bank20 udata_bank20 00044E  __Ludata_bank21 udata_bank21 00044E
+__Ludata_bank22 udata_bank22 00044E  __Ludata_bank23 udata_bank23 00044E
+__Ludata_bank24 udata_bank24 00044E  __Ludata_bank25 udata_bank25 00044E
+__Ludata_bank26 udata_bank26 00044E  __Ludata_bank27 udata_bank27 00044E
+__Ludata_bank28 udata_bank28 00044E  __Ludata_bank29 udata_bank29 00044E
+__Ludata_bank30 udata_bank30 00044E  __Ludata_bank31 udata_bank31 00044E
+__Ludata_bank32 udata_bank32 00044E  __Ludata_bank33 udata_bank33 00044E
+__Ludata_bank34 udata_bank34 00044E  __Ludata_bank35 udata_bank35 00044E
+__Ludata_bank36 udata_bank36 00044E  __Ludata_bank37 udata_bank37 00044E
+__Ludata_bank38 udata_bank38 00044E  __Ludata_bank39 udata_bank39 00044E
+__Ludata_bank40 udata_bank40 00044E  __Ludata_bank41 udata_bank41 00044E
+__Ludata_bank42 udata_bank42 00044E  __Ludata_bank43 udata_bank43 00044E
+__Ludata_bank44 udata_bank44 00044E  __Ludata_bank45 udata_bank45 00044E
+__Ludata_bank46 udata_bank46 00044E  __Ludata_bank47 udata_bank47 00044E
+__Ludata_bank48 udata_bank48 00044E  __Ludata_bank49 udata_bank49 00044E
+__Ludata_bank5  udata_bank5  00044E  __Ludata_bank50 udata_bank50 00044E
+__Ludata_bank51 udata_bank51 00044E  __Ludata_bank52 udata_bank52 00044E
+__Ludata_bank53 udata_bank53 00044E  __Ludata_bank54 udata_bank54 00044E
+__Ludata_bank6  udata_bank6  00044E  __Ludata_bank7  udata_bank7  00044E
+__Ludata_bank8  udata_bank8  00044E  __Ludata_bank9  udata_bank9  00044E
+__S0            (abs)        000498  __S1            (abs)        00051B
 __S3            (abs)        000000  isa$std         (abs)        000001
 isa$xinst       (abs)        000000  

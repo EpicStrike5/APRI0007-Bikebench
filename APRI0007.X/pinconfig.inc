@@ -135,16 +135,17 @@ PinConfig_Init:
 
     ; ==================================================================
     ; 2. WEAK PULL-UPS  (WPUx : 1=enabled, 0=disabled)
-    ;    Enable on every pin to prevent floating inputs.
-    ;    Pull-ups on output pins are harmless (overridden by driver).
+    ;    Only enable on button pins (RB0, RB1).  All others off.
     ; ==================================================================
     ; WPUA is in the same bank as ANSELA (bank 4) - no BANKSEL needed
-    movlw   0xFF
-    movwf   BANKMASK(WPUA), 1           ; PORTA all pull-ups ON
-    movwf   BANKMASK(WPUB), 1           ; PORTB all pull-ups ON (buttons)
-    movwf   BANKMASK(WPUC), 1           ; PORTC all pull-ups ON
-    movwf   BANKMASK(WPUD), 1           ; PORTD all pull-ups ON
-    movwf   BANKMASK(WPUE), 1           ; PORTE all pull-ups ON
+    clrf    BANKMASK(WPUA), 1           ; PORTA no pull-ups
+    movlw   0x03                        ; bits 0,1 = RB0,RB1 buttons only
+    movwf   BANKMASK(WPUB), 1           ; PORTB pull-ups on buttons only
+    clrf    BANKMASK(WPUC), 1           ; PORTC no pull-ups (servo RC2)
+    clrf    BANKMASK(WPUD), 1           ; PORTD no pull-ups (LEDs)
+    clrf    BANKMASK(WPUE), 1           ; PORTE no pull-ups
+    ; To re-enable all pull-ups, replace clrf with 0xFF movwf
+    ; and change WPUB line back to 0xFF.
 
     ; ==================================================================
     ; 3. OUTPUT LATCHES  (LATx : initial output state)

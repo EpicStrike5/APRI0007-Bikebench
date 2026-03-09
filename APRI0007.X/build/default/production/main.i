@@ -24,13 +24,14 @@
 ;
 ; How it works:
 ; Servo PWM runs autonomously via Timer1 overflow interrupt (50 Hz).
-; The main loop polls buttons every ~20ms and updates position.
-; CPU is free for CAN bus and other tasks between ISR calls.
+; The main loop detects released->pressed button edges every ~20ms.
+; Edge detection prevents a stuck/shorted pin from continuously
+; driving the servo. CPU is free for CAN and other tasks.
 ;
-; Servo position (0-255) maps to 0-270 degrees:
-; 0 -> ~0 deg (0.5ms pulse)
-; 128 -> ~135 deg (center)
-; 255 -> ~270 deg (2.5ms pulse)
+; Servo position (0-255) maps to ~0-270 degrees:
+; 0 -> ~0 deg (400us HIGH pulse)
+; 128 -> ~135 deg (~1.49ms HIGH pulse)
+; 255 -> ~270 deg (~2.57ms HIGH pulse)
 ;======================================================================
 
 PROCESSOR 18F47Q84
@@ -47449,7 +47450,7 @@ stk_offset SET 0
 auto_size SET 0
 ENDM
 # 6 "C:\\Program Files\\Microchip\\xc8\\v3.10\\pic\\include/xc.inc" 2 3
-# 32 "main.asm" 2
+# 33 "main.asm" 2
 
 ; ---- Configuration Bits ----
 ; Internal oscillator 64MHz, no watchdog, low-voltage programming on
@@ -47562,7 +47563,7 @@ ws_loop:
     decfsz waitSecondsValue, f, c
     goto ws_loop
     return
-# 54 "main.asm" 2
+# 55 "main.asm" 2
 # 1 "./pinconfig.inc" 1
 ;======================================================================
 ; pinconfig.inc - Centralised Pin Configuration (pic-as syntax)
@@ -47701,16 +47702,17 @@ PinConfig_Init:
 
     ; ==================================================================
     ; 2. WEAK PULL-UPS (WPUx : 1=enabled, 0=disabled)
-    ; Enable on every pin to prevent floating inputs.
-    ; Pull-ups on output pins are harmless (overridden by driver).
+    ; Only enable on button pins (((PORTB) and 0FFh), 0, a, ((PORTB) and 0FFh), 1, a). All others off.
     ; ==================================================================
     ; WPUA is in the same bank as ANSELA (bank 4) - no BANKSEL needed
-    movlw 0xFF
-    movwf ((WPUA) and 0FFh), 1 ; PORTA all pull-ups ON
-    movwf ((WPUB) and 0FFh), 1 ; PORTB all pull-ups ON (buttons)
-    movwf ((WPUC) and 0FFh), 1 ; PORTC all pull-ups ON
-    movwf ((WPUD) and 0FFh), 1 ; PORTD all pull-ups ON
-    movwf ((WPUE) and 0FFh), 1 ; PORTE all pull-ups ON
+    clrf ((WPUA) and 0FFh), 1 ; PORTA no pull-ups
+    movlw 0x03 ; bits 0,1 = ((PORTB) and 0FFh), 0, a,((PORTB) and 0FFh), 1, a buttons only
+    movwf ((WPUB) and 0FFh), 1 ; PORTB pull-ups on buttons only
+    clrf ((WPUC) and 0FFh), 1 ; PORTC no pull-ups (servo ((PORTC) and 0FFh), 2, a)
+    clrf ((WPUD) and 0FFh), 1 ; PORTD no pull-ups (LEDs)
+    clrf ((WPUE) and 0FFh), 1 ; PORTE no pull-ups
+    ; To re-enable all pull-ups, replace clrf with 0xFF movwf
+    ; and change WPUB line back to 0xFF.
 
     ; ==================================================================
     ; 3. OUTPUT LATCHES (LATx : initial output state)
@@ -47788,167 +47790,98 @@ PinConfig_Init:
     ; bsf ((PPSLOCK) and 0FFh), 0, 1 ; ((PPSLOCK) and 0FFh), 0, b = 1
 
     return
-# 55 "main.asm" 2
+# 56 "main.asm" 2
 # 1 "./servo_hw.inc" 1
 ;======================================================================
-; servo_hw.inc - Timer1 Overflow Servo Control Library (pic-as syntax)
-; Processor: PIC18F47Q84 @ 64MHz (16 MIPS)
+; servo_hw.inc - Timer1 Toggle Servo Control (pic-as syntax)
+; Processor: PIC18F47Q84 @ 64MHz
 ;
-; Hardware: Timer1 overflow interrupt for interrupt-driven servo PWM
-; Output pin: ((PORTC) and 0FFh), 2, a (toggled via LATC in ISR)
-; Timer1: Fosc/4 with 1:8 prescaler = 2 MHz (0.5us/tick)
+; Timer1: Fosc/4, 1:8 prescaler = 2 MHz (0.5us/tick)
+; ((PORTC) and 0FFh), 2, a is toggled on every Timer1 overflow -> 50% duty cycle.
+; Servo position (0-255) maps to output frequency:
 ;
-; Approach:
-; Timer1 overflows at the end of each phase (HIGH or LOW).
-; The ISR toggles ((PORTC) and 0FFh), 2, a and preloads TMR1 with the duration of
-; the next phase. This generates a 50 Hz servo signal without
-; using the CCP module at all.
+; pos = 0 -> 5000 ticks half-period -> 200 Hz
+; pos = 255 -> 1175 ticks half-period -> ~851 Hz
 ;
-; Inspired by the "software PWM via Timer1 overflow" technique
-; but using one-shot preloads for full 16-bit timing precision
-; instead of a coarse step counter.
+; Preload formula: 60536 + pos * 15
+; 60536 = 65536 - 5000 (200 Hz base)
+; pos * 15 = pos * 16 - pos (shift then subtract)
 ;
-; Servo: 270 degree range, position 0-255
-; Position mapping:
-; pos = 0 -> 0 deg (0.5ms pulse = 1000 ticks)
-; pos = 128 -> ~135 deg (~1.52ms pulse, center)
-; pos = 255 -> ~270 deg (~2.54ms pulse = 5080 ticks)
-;
-; Period: 20ms (50 Hz) = 40000 ticks at 2 MHz
-;
-; TMR1 preload = 65536 - ticks (two's complement)
-; Timer counts from preload up to overflow (65536) = exact ticks.
-;
-; The servo PWM runs via Timer1 overflow interrupt - CPU is free
-; for CAN polling and other tasks between ISR calls.
-;
-; Provides:
-; Servo_Init - configure Timer1, enable TMR1 interrupt
-; Servo_SetPos - set position from W register (0-255)
-; Servo_IncPos - increase position by SERVO_STEP, clamp at 255
-; Servo_DecPos - decrease position by SERVO_STEP, clamp at 0
-; Servo_ISR - interrupt handler (called from TMR1 vector)
-;
-; Replaces: servo.inc (software bit-bang version)
-; Usage: #include "servo_hw.inc" from main.asm
-; Requires: #include <xc.inc> before this file
-; Requires: wait.inc (for startup delay)
-; Requires: pinconfig.inc (((PORTC) and 0FFh), 2, a pin setup done externally)
-; Linker option: -pivt=08h (shared IVT PSECT)
-; Caller must enable ((INTCON0) and 0FFh), 7, a/((INTCON0) and 0FFh), 6, a after Servo_Init returns
+; Provides: Servo_Init, Servo_SetPos, Servo_IncPos, Servo_DecPos
+; Requires: pinconfig.inc (((PORTC) and 0FFh), 2, a output), wait.inc (debug delays)
+; Caller enables ((INTCON0) and 0FFh), 7, a/((INTCON0) and 0FFh), 6, a after Servo_Init
+; Linker option: -pivt=08h
 ;======================================================================
 
 ; ---- Diagnostic mode ----
-; Set to 1 to enable diagnostic LEDs (wire LEDs to ((PORTD) and 0FFh), 1, a and ((PORTD) and 0FFh), 2, a):
-; - At startup: two ~250ms pulses on ((PORTC) and 0FFh), 2, a (visible on scope)
-; - ((PORTD) and 0FFh), 1, a ON steady = Servo_Init completed OK
-; - ((PORTD) and 0FFh), 2, a toggling = Servo_ISR is firing (appears as dim glow)
-; Set to 0 to disable all diagnostics.
+; SERVO_DEBUG 1: two 250ms HIGH pulses on ((PORTC) and 0FFh), 2, a at startup (scope test)
+; ((PORTD) and 0FFh), 1, a ON = Servo_Init complete
+; ((PORTD) and 0FFh), 2, a toggling = ISR firing
 
 
 ; ---- Configuration ----
-SERVO_PIN equ 2 ; bit number on PORTC (((PORTC) and 0FFh), 2, a)
-SERVO_STEP equ 5 ; increment per button press (~5.3 deg)
-SERVO_DEFAULT equ 128 ; center position (~135 deg)
-SERVO_PERIOD equ 40000 ; 20ms at 2 MHz (0.5us/tick)
-SERVO_MIN equ 1000 ; 0.5ms minimum pulse width (ticks)
-
-; TMR1 preload for initial 20ms delay before first pulse
-SERVO_PRELOAD equ 0x10000 - SERVO_PERIOD ; = 25536 = 0x63C0
+SERVO_PIN equ 2 ; ((PORTC) and 0FFh), 2, a bit in LATC
+SERVO_STEP equ 20 ; position increment per button press
+SERVO_DEFAULT equ 128 ; starting position
+SERVO_PRELOAD_BASE equ 60536 ; TMR1 preload at pos=0 (200 Hz)
+                                    ; 60536 = 0xEC78
 
 ; ---- Variables (Access Bank) ----
 PSECT udata_acs
 servo_pos: DS 1 ; current position (0-255)
-servo_state: DS 1 ; ISR state: 0=next rising, 1=next falling
-servo_high_l: DS 1 ; TMR1 preload for HIGH phase, low byte
-servo_high_h: DS 1 ; TMR1 preload for HIGH phase, high byte
-servo_low_l: DS 1 ; TMR1 preload for LOW phase, low byte
-servo_low_h: DS 1 ; TMR1 preload for LOW phase, high byte
+servo_ticks_l: DS 1 ; TMR1 preload, low byte
+servo_ticks_h: DS 1 ; TMR1 preload, high byte
 
-; ---- ISR Code (4-byte aligned for IVT address lookup) ----
+; ---- ISR (4-byte aligned for IVT address lookup) ----
 PSECT isrServo, class=CODE, reloc=4
 
 ;----------------------------------------------------------------------
-; Servo_ISR
-; Timer1 overflow interrupt handler.
-; Toggles ((PORTC) and 0FFh), 2, a via LATC and preloads TMR1 for the next phase.
-; Uses FAST context save/restore (shadow registers via retfie 1).
-;
-; Called automatically from the TMR1 IVT entry (IRQ 28).
+; Servo_ISR - Timer1 overflow handler
+; Toggles ((PORTC) and 0FFh), 2, a on every overflow (50% duty cycle).
+; Reloads TMR1 with servo_ticks for the chosen frequency.
 ;----------------------------------------------------------------------
 Servo_ISR:
-    ; Clear TMR1 interrupt flag (PIR3 bit 4, bank 4)
     BANKSEL PIR3
-    bcf ((PIR3) and 0FFh), 4, 1
+    bcf ((PIR3) and 0FFh), 4, 1 ; clear ((PIR3) and 0FFh), 4, a
 
 
-    ; DEBUG: toggle ((PORTD) and 0FFh), 2, a every ISR call (~100Hz -> appears as dim glow)
-    ; LATD (0x04C2) is in bank 4, same as PIR3 - no extra BANKSEL
-    btg ((LATD) and 0FFh), 2, 1
+    BANKSEL LATD
+    btg ((LATD) and 0FFh), 2, 1 ; toggle ((PORTD) and 0FFh), 2, a (ISR heartbeat LED)
 
 
-    ; Branch on servo state
-    btfsc servo_state, 0, c ; 0 = time for rising edge
-    goto _isr_falling
+    ; Toggle ((PORTC) and 0FFh), 2, a - generates 50% duty cycle at current frequency
+    BANKSEL LATC
+    btg ((LATC) and 0FFh), SERVO_PIN, 1
 
-    ; === Rising edge: drive ((PORTC) and 0FFh), 2, a HIGH, preload for HIGH duration ===
-    ; LATC is also in bank 4 (0x04C0) - same bank as PIR3
-    bsf ((LATC) and 0FFh), SERVO_PIN, 1 ; ((PORTC) and 0FFh), 2, a = HIGH (pulse start)
-
-    ; Preload TMR1 for HIGH phase duration (TMR1 regs in bank 3)
-    ; With RD16=1: write TMR1L (buffer), write TMR1H (transfers both)
+    ; Reload TMR1 (write TMR1L first, then TMR1H - required for RD16=1)
     BANKSEL TMR1L
-    movf servo_high_l, w, c
-    movwf ((TMR1L) and 0FFh), 1 ; write to buffer
-    movf servo_high_h, w, c
-    movwf ((TMR1H) and 0FFh), 1 ; transfers both to counter
-
-    bsf servo_state, 0, c ; state = 1 (falling next)
-    retfie 1 ; FAST return
-
-_isr_falling:
-    ; === Falling edge: drive ((PORTC) and 0FFh), 2, a LOW, preload for LOW duration ===
-    ; Still in bank 4 from BANKSEL PIR3 above
-    bcf ((LATC) and 0FFh), SERVO_PIN, 1 ; ((PORTC) and 0FFh), 2, a = LOW (pulse end)
-
-    ; Preload TMR1 for LOW phase duration
-    BANKSEL TMR1L
-    movf servo_low_l, w, c
+    movf servo_ticks_l, w, c
     movwf ((TMR1L) and 0FFh), 1
-    movf servo_low_h, w, c
+    movf servo_ticks_h, w, c
     movwf ((TMR1H) and 0FFh), 1
 
-    bcf servo_state, 0, c ; state = 0 (rising next)
-    retfie 1 ; FAST return
+    retfie 1
 
-; ---- TMR1 Interrupt Vector Table Entry ----
-; TMR1 overflow is IRQ 28 (PIR3 bit 4).
-; IVT entry = 2-byte address word at IVTBASE + 2*28.
+; ---- IVT entry: TMR1 overflow = IRQ 28 ----
 PSECT ivt, class=CODE, reloc=2, ovrld
-    ORG 28*2 ; byte offset for IRQ 28
-    DW Servo_ISR >> 2 ; ISR address / 4
+    ORG 28*2
+    DW Servo_ISR >> 2
 
 ; ---- Regular code ----
 PSECT code
 
 ;----------------------------------------------------------------------
 ; Servo_Init
-; Configures Timer1 (2 MHz), enables TMR1 overflow interrupt,
-; sets default center position.
-;
-; No CCP module used - pure Timer1 overflow approach.
-;
-; Pin I/O for ((PORTC) and 0FFh), 2, a is handled by pinconfig.inc.
-; Call PinConfig_Init BEFORE this routine.
-; Enable ((INTCON0) and 0FFh), 7, a separately after.
+; Sets up Timer1, computes initial preload, enables TMR1 interrupt.
+; Pin direction for ((PORTC) and 0FFh), 2, a is handled by pinconfig.inc - call that first.
+; Enable ((INTCON0) and 0FFh), 7, a/((INTCON0) and 0FFh), 6, a separately after this returns.
 ;----------------------------------------------------------------------
 Servo_Init:
 
 
-    ; === DEBUG: Pin test ===
-    ; Generate two 250ms pulses on ((PORTC) and 0FFh), 2, a BEFORE Timer1 starts.
-    ; If you see these on the scope, ((PORTC) and 0FFh), 2, a pin and wiring are OK.
-    ; If not, it is a hardware/wiring problem.
+    ; Blocking pin test: two 250ms HIGH pulses on ((PORTC) and 0FFh), 2, a.
+    ; Visible on scope before any interrupts start.
+    ; If HIGH appears: pin, wiring, and probe are correct.
     BANKSEL LATC
     bsf ((LATC) and 0FFh), SERVO_PIN, 1 ; ((PORTC) and 0FFh), 2, a HIGH
     movlw 250
@@ -47964,160 +47897,126 @@ Servo_Init:
     call waitMilliSeconds
 
 
-    ; --- Timer1: Fosc/4 (16 MHz), 1:8 prescaler = 2 MHz ---
-    ; All Timer1 registers are in bank 3
+    ; Configure Timer1: Fosc/4, 1:8 prescaler = 2 MHz (0.5 us/tick)
     BANKSEL T1CON
-    clrf ((T1CON) and 0FFh), 1 ; stop Timer1 first
+    clrf ((T1CON) and 0FFh), 1 ; stop timer, clear config
     clrf ((T1GCON) and 0FFh), 1 ; gate disabled
     movlw 0x01
     movwf ((T1CLK) and 0FFh), 1 ; clock = Fosc/4
 
-    ; Preload TMR1 for initial 20ms delay before first pulse
-    ; Timer stopped + RD16 not yet set -> writes go directly to counter
-    movlw low(SERVO_PRELOAD) ; 0xC0
+    ; Compute preload for default position
+    movlw SERVO_DEFAULT
+    movwf servo_pos, c
+    call _servo_calc_ticks
+
+    ; Load initial preload while timer is stopped and RD16=0
+    ; (direct write, no buffer mechanism yet)
+    BANKSEL TMR1L
+    movf servo_ticks_l, w, c
     movwf ((TMR1L) and 0FFh), 1
-    movlw high(SERVO_PRELOAD) ; 0x63
+    movf servo_ticks_h, w, c
     movwf ((TMR1H) and 0FFh), 1
 
-    ; Start Timer1: ON=1, RD16=1, CKPS=11 (1:8 prescaler)
+    ; Start Timer1: ((T1CON) and 0FFh), 0, b=1, RD16=1, CKPS=11 (1:8 prescaler)
+    BANKSEL T1CON
     movlw 0x33
     movwf ((T1CON) and 0FFh), 1
 
-    ; --- Default position + pre-compute TMR1 preloads ---
-    clrf servo_state, c ; start: rising edge next
-    movlw SERVO_DEFAULT
-    movwf servo_pos, c
-    call _servo_calc_pulse
-
-    ; --- Enable TMR1 overflow interrupt (PIR3/PIE3 bit 4, bank 4) ---
+    ; Enable TMR1 overflow interrupt (PIE3 bit 4)
     BANKSEL PIR3
     bcf ((PIR3) and 0FFh), 4, 1 ; clear any pending ((PIR3) and 0FFh), 4, a
     BANKSEL PIE3
     bsf ((PIE3) and 0FFh), 4, 1 ; ((PIE3) and 0FFh), 4, a = 1
 
 
-    ; DEBUG: ((PORTD) and 0FFh), 1, a ON = Servo_Init completed (Timer1 running, ((PIE3) and 0FFh), 4, a set)
-    ; LATD is in bank 4, same as PIE3 - no extra BANKSEL
-    bsf ((LATD) and 0FFh), 1, 1
+    BANKSEL LATD
+    bsf ((LATD) and 0FFh), 1, 1 ; ((PORTD) and 0FFh), 1, a ON = init complete
 
 
-    ; Caller must enable ((INTCON0) and 0FFh), 7, a after this returns
     return
 
 ;----------------------------------------------------------------------
-; Servo_SetPos
-; Input: W = new position (0-255)
-; Recalculates TMR1 preloads. Briefly disables ((INTCON0) and 0FFh), 7, a for atomicity.
+; Servo_SetPos - set position from W (0-255)
+; Disables ((INTCON0) and 0FFh), 7, a during preload update for atomic write.
 ;----------------------------------------------------------------------
 Servo_SetPos:
     movwf servo_pos, c
-
-    ; Disable interrupts while updating timing values
     BANKSEL INTCON0
-    bcf ((INTCON0) and 0FFh), 7, 1 ; ((INTCON0) and 0FFh), 7, a = 0
-
-    call _servo_calc_pulse
-
+    bcf ((INTCON0) and 0FFh), 7, 1 ; ((INTCON0) and 0FFh), 7, a off (atomic update)
+    call _servo_calc_ticks
     BANKSEL INTCON0
-    bsf ((INTCON0) and 0FFh), 7, 1 ; ((INTCON0) and 0FFh), 7, a = 1
+    bsf ((INTCON0) and 0FFh), 7, 1 ; ((INTCON0) and 0FFh), 7, a on
     return
 
 ;----------------------------------------------------------------------
-; Servo_IncPos
-; Increases servo_pos by SERVO_STEP, clamped at 255, then recalculates.
+; Servo_IncPos - increase position by SERVO_STEP, clamp at 255
 ;----------------------------------------------------------------------
 Servo_IncPos:
     movlw SERVO_STEP
     addwf servo_pos, f, c
-    bc _shw_inc_clamp ; carry = overflow past 255
+    bc _srvhw_inc_clamp
     movf servo_pos, w, c
     goto Servo_SetPos
-_shw_inc_clamp:
+_srvhw_inc_clamp:
     movlw 255
     goto Servo_SetPos
 
 ;----------------------------------------------------------------------
-; Servo_DecPos
-; Decreases servo_pos by SERVO_STEP, clamped at 0, then recalculates.
+; Servo_DecPos - decrease position by SERVO_STEP, clamp at 0
 ;----------------------------------------------------------------------
 Servo_DecPos:
     movlw SERVO_STEP
     subwf servo_pos, f, c
-    bnc _shw_dec_clamp ; no carry = borrow = underflow
+    bnc _srvhw_dec_clamp
     movf servo_pos, w, c
     goto Servo_SetPos
-_shw_dec_clamp:
+_srvhw_dec_clamp:
     movlw 0
     goto Servo_SetPos
 
 ;----------------------------------------------------------------------
-; _servo_calc_pulse (internal)
-; Computes TMR1 preload values from servo_pos.
+; _servo_calc_ticks (internal)
+; Computes TMR1 preload for current servo_pos:
 ;
-; pulse_ticks = SERVO_MIN + servo_pos * 16
-; = 1000 + pos * 16 (range 1000..5080)
-; remain_ticks = SERVO_PERIOD - pulse_ticks
-; = 40000 - pulse_ticks (range 34920..39000)
+; preload = 60536 + pos * 15
+; pos * 15 = pos * 16 - pos (4 left-shifts, then subtract pos)
 ;
-; TMR1 preload = 65536 - ticks (two's complement negation)
-; comf + comf + infsnz/incf implements 16-bit negation.
-;
-; Results stored in servo_high_h:servo_high_l (HIGH phase preload)
-; and servo_low_h:servo_low_l (LOW phase preload)
+; Result -> servo_ticks_h:servo_ticks_l
 ;----------------------------------------------------------------------
-_servo_calc_pulse:
-    ; --- Step 1: 16-bit result = servo_pos * 16 (shift left 4) ---
-    clrf servo_high_h, c
+_servo_calc_ticks:
+
+    ; Step 1: servo_ticks = pos * 16
+    clrf servo_ticks_h, c
     movf servo_pos, w, c
-    movwf servo_high_l, c
+    movwf servo_ticks_l, c
 
-    bcf STATUS, 0, c ; clear carry
-    rlcf servo_high_l, f, c ; x2
-    rlcf servo_high_h, f, c
     bcf STATUS, 0, c
-    rlcf servo_high_l, f, c ; x4
-    rlcf servo_high_h, f, c
+    rlcf servo_ticks_l, f, c ; x2
+    rlcf servo_ticks_h, f, c
     bcf STATUS, 0, c
-    rlcf servo_high_l, f, c ; x8
-    rlcf servo_high_h, f, c
+    rlcf servo_ticks_l, f, c ; x4
+    rlcf servo_ticks_h, f, c
     bcf STATUS, 0, c
-    rlcf servo_high_l, f, c ; x16
-    rlcf servo_high_h, f, c
+    rlcf servo_ticks_l, f, c ; x8
+    rlcf servo_ticks_h, f, c
+    bcf STATUS, 0, c
+    rlcf servo_ticks_l, f, c ; x16
+    rlcf servo_ticks_h, f, c
 
-    ; --- Step 2: add SERVO_MIN (1000 = 0x03E8) ---
-    movlw low(SERVO_MIN) ; 0xE8
-    addwf servo_high_l, f, c
-    movlw high(SERVO_MIN) ; 0x03
-    addwfc servo_high_h, f, c ; + carry from low byte
-    ; servo_high = pulse_ticks (1000..5080)
+    ; Step 2: servo_ticks = pos * 15 (subtract pos from pos*16)
+    movf servo_pos, w, c
+    subwf servo_ticks_l, f, c ; low byte: ticks_l -= pos
+    btfss STATUS, 0, c ; C=0 = borrow occurred
+    decf servo_ticks_h, f, c ; propagate borrow to high byte
 
-    ; --- Step 3: servo_low = SERVO_PERIOD - servo_high ---
-    ; Low byte: W = low(40000) - servo_high_l
-    movf servo_high_l, w, c
-    sublw low(SERVO_PERIOD) ; W = 0x40 - high_l
-    movwf servo_low_l, c
-    ; High byte: W = high(40000) - servo_high_h - borrow
-    movf servo_high_h, w, c
-    btfss STATUS, 0, c ; skip if C=1 (no borrow)
-    addlw 1 ; compensate for borrow
-    sublw high(SERVO_PERIOD) ; W = 0x9C - adjusted
-    movwf servo_low_h, c
-    ; servo_low = remaining ticks (34920..39000)
-
-    ; --- Step 4: negate servo_high -> TMR1 preload = 65536 - pulse_ticks ---
-    comf servo_high_l, f, c ; one's complement low
-    comf servo_high_h, f, c ; one's complement high
-    infsnz servo_high_l, f, c ; +1 low; skip if no wrap to 0
-    incf servo_high_h, f, c ; propagate carry to high
-
-    ; --- Step 5: negate servo_low -> TMR1 preload = 65536 - remain_ticks ---
-    comf servo_low_l, f, c
-    comf servo_low_h, f, c
-    infsnz servo_low_l, f, c
-    incf servo_low_h, f, c
+    ; Step 3: servo_ticks += 60536 (0xEC78)
+    movlw low(SERVO_PRELOAD_BASE) ; 0x78
+    addwf servo_ticks_l, f, c
+    movlw high(SERVO_PRELOAD_BASE) ; 0xEC
+    addwfc servo_ticks_h, f, c
 
     return
-# 56 "main.asm" 2
+# 57 "main.asm" 2
 # 1 "./can_torque.inc" 1
 ;======================================================================
 ; can_torque.inc - CAN Bus Interface for BAFANG PA261 Torque Sensor
@@ -48520,7 +48419,7 @@ CAN_Transmit:
     movwf ((C1TXQCONH) and 0FFh), 1
 
     return
-# 57 "main.asm" 2
+# 58 "main.asm" 2
 # 1 "./debounce.inc" 1
 ;======================================================================
 ; debounce.inc - Hardware Timer2 Button Debounce Library (pic-as syntax)
@@ -48682,7 +48581,16 @@ Debounce_Init:
 
     ; Caller must enable ((INTCON0) and 0FFh), 7, a after this returns
     return
-# 58 "main.asm" 2
+# 59 "main.asm" 2
+
+; ---- Main variables (edge detection) ----
+; btn_prev tracks the last-seen db_stable value so the main loop can
+; detect released->pressed transitions instead of polling raw level.
+; A button that is stuck LOW from power-on will fire its handler at most
+; once (on the very first edge when prev=released), then never again.
+PSECT udata_acs
+btn_prev: DS 1 ; db_stable value from previous loop iteration
+btn_edge: DS 1 ; scratch: bits that just transitioned released->pressed
 
 ; ---- Main Code ----
 PSECT code
@@ -48710,6 +48618,10 @@ start:
 
     ; --- Initialise peripherals and enable interrupts ---
     call Debounce_Init
+    ; Seed btn_prev with the current debounced state so the first loop
+    ; iteration sees no edges and does not fire spurious handlers.
+    movf db_stable, w, c
+    movwf btn_prev, c
     call Servo_Init
     BANKSEL INTCON0
     bsf ((INTCON0) and 0FFh), 6, 1 ; ((INTCON0) and 0FFh), 6, a = 1 (low-priority interrupts)
@@ -48720,19 +48632,35 @@ start:
     ; ==========================================================
     ; MAIN LOOP
     ; Servo PWM runs in background via Timer1 overflow interrupt.
-    ; Timer2 ISR handles button debounce every 10ms.
-    ; Main loop reads debounced state from db_stable.
+    ; Timer2 ISR (debounce.inc) updates db_stable every 10ms.
+    ;
+    ; Edge detection: handlers fire only on released->pressed
+    ; transition, not while held. This prevents a shorted/stuck
+    ; button pin from continuously driving the servo.
+    ;
+    ; Algorithm (active-LOW: 0=pressed, 1=released):
+    ; changed = db_stable XOR btn_prev (bits that flipped)
+    ; just_pressed = changed AND btn_prev (were released, now pressed)
+    ; btn_prev = db_stable (update for next loop)
     ; ==========================================================
 mainLoop:
-    ; --- Check Button 1 (((PORTB) and 0FFh), 0, a) : rotate RIGHT ---
-    btfss db_stable, 0, c ; skip if NOT pressed (active LOW)
+    ; --- Compute just-pressed bits ---
+    movf db_stable, w, c ; W = current debounced state
+    xorwf btn_prev, w, c ; W = bits that changed (btn_prev unchanged)
+    andwf btn_prev, w, c ; W = bits: were 1 (released) AND now 0 (pressed)
+    movwf btn_edge, c ; save just-pressed flags
+    movf db_stable, w, c ; update prev for next iteration
+    movwf btn_prev, c
+
+    ; --- Button 1 (((PORTB) and 0FFh), 0, a) : rotate RIGHT ---
+    btfss btn_edge, 0, c ; skip if button 1 not just pressed
     call handleButton1
 
-    ; --- Check Button 2 (((PORTB) and 0FFh), 1, a) : rotate LEFT ---
-    btfss db_stable, 1, c ; skip if NOT pressed (active LOW)
+    ; --- Button 2 (((PORTB) and 0FFh), 1, a) : rotate LEFT ---
+    btfss btn_edge, 1, c ; skip if button 2 not just pressed
     call handleButton2
 
-    ; --- Delay ~20ms (polling rate for servo step updates) ---
+    ; --- Delay ~20ms (debounce ISR fires at 10ms; poll at 20ms is fine) ---
     movlw 20
     call waitMilliSeconds
 
