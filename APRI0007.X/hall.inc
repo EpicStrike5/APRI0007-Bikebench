@@ -35,12 +35,16 @@ hall_overflow:      DS 1            ; increments when hall_counter wraps 255->0
 hall_tmr0_ticks:    DS 1            ; Timer0 overflow counter
 hall_count_l:       DS 1            ; last captured count, low byte  (output)
 hall_count_h:       DS 1            ; last captured count, high byte (output)
+blink_counter:      DS 1	    ; Temporary counter for blinking
 
 ; ---- INT2 ISR (IRQ 80) ----
 PSECT isrHallINT2, class=CODE, reloc=4
 Hall_INT2_ISR:
     BANKSEL PIR10
     bcf     BANKMASK(PIR10), 0, 1       ; clear INT2IF
+    ; Toggle LED D2
+    BANKSEL LATD
+    BTG     LATD, 2, 1
     incfsz  hall_counter, f, c          ; increment; skip if result = 0 (wrapped)
     bra     _hall_no_overflow
     incf    hall_overflow, f, c         ; propagate wrap to high counter
@@ -52,7 +56,7 @@ PSECT isrHallTMR0, class=CODE, reloc=4
 Hall_TMR0_ISR:
     BANKSEL PIR3
     bcf     BANKMASK(PIR3), 7, 1        ; clear TMR0IF
-
+    
     ; Count overflows; capture when interval reached
     incf    hall_tmr0_ticks, f, c
     movlw   HALL_TMR0_INTERVAL
@@ -60,18 +64,57 @@ Hall_TMR0_ISR:
     btfss   STATUS, 2, c                ; skip if Z (ticks == INTERVAL)
     bra     _hall_tmr0_exit
 
+    ; Toggle LED D0 if 3s are passed
+    BANKSEL LATD
+    bsf     LATD, 0, 1              ; LED ON
+    movlw   100
+    call    waitMilliSeconds
+    BANKSEL LATD
+    bcf     LATD, 0, 1              ; LED OFF
     ; Capture hall_overflow:hall_counter into hall_count_h:hall_count_l
     clrf    hall_tmr0_ticks, c
     movf    hall_counter, w, c
     movwf   hall_count_l, c
     movf    hall_overflow, w, c
     movwf   hall_count_h, c
+    
     ; Reset event counters for next interval
     clrf    hall_counter, c
     clrf    hall_overflow, c
-
+    
+    call    DisplayHallCount
+    
 _hall_tmr0_exit:
     retfie  1
+    
+
+DisplayHallCount:
+    ; Check if hall_count_l is zero
+    movf    hall_count_l, f, c          ; Move to itself (sets Z flag)
+    btfsc   STATUS, 2, c                ; If zero, skip
+    return                               ; Return without blinking
+    
+    ; Copy hall_count_l to blink_counter (preserve original)
+    movf    hall_count_l, w, c
+    movwf   blink_counter, c
+    
+    ; Call blink routine
+    call    blink_loop
+    return
+
+blink_loop:
+    BANKSEL LATD
+    bsf     LATD, 1, 1                  ; LED ON
+    movlw   100
+    call    waitMilliSeconds
+    bcf     LATD, 1, 1                  ; LED OFF
+    movlw   200
+    call    waitMilliSeconds
+    
+    decfsz  blink_counter, f, c          ; Decrement temporary counter
+    bra     blink_loop                   ; If not zero, blink again
+    
+    return
 
 ; ---- IVT entries ----
 PSECT ivt, class=CODE, reloc=2, ovrld
@@ -89,6 +132,7 @@ PSECT code
 ; Timer0 interrupts. Call before enabling GIE/GIEL.
 ;----------------------------------------------------------------------
 Hall_Init:
+    
     ; RB2: digital input (pinconfig.inc clears all ANSELx at startup,
     ; but set explicitly here for self-contained initialisation)
     BANKSEL ANSELB
@@ -108,7 +152,7 @@ Hall_Init:
     BANKSEL T0CON0
     clrf    BANKMASK(T0CON0), 1         ; T0EN=0, 8-bit mode (bit3=0)
     BANKSEL T0CON1
-    movlw   b'01001111'                 ; T0CS=Fosc/4, sync, CKPS=1:32768
+    movlw   0x4F                 ; T0CS=Fosc/4, sync, CKPS=1:32768
     movwf   BANKMASK(T0CON1), 1
     BANKSEL PIR3
     bcf     BANKMASK(PIR3), 7, 1        ; clear TMR0IF
