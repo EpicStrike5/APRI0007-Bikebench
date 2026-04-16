@@ -1,0 +1,270 @@
+PROCESSOR 16F1789
+
+; CONFIG1
+  CONFIG  FOSC = INTOSC         ; Oscillator Selection (INTOSC oscillator: I/O function on CLKIN pin)
+  CONFIG  WDTE = OFF            ; Watchdog Timer Enable (WDT disabled)
+  CONFIG  PWRTE = OFF           ; Power-up Timer Enable (PWRT disabled)
+  CONFIG  MCLRE = ON            ; MCLR Pin Function Select (MCLR/VPP pin function is MCLR)
+  CONFIG  CP = OFF              ; Flash Program Memory Code Protection (Program memory code protection is disabled)
+  CONFIG  CPD = OFF             ; Data Memory Code Protection (Data memory code protection is disabled)
+  CONFIG  BOREN = ON            ; Brown-out Reset Enable (Brown-out Reset enabled)
+  CONFIG  CLKOUTEN = OFF        ; Clock Out Enable (CLKOUT function is disabled. I/O or oscillator function on the CLKOUT pin)
+  CONFIG  IESO = ON             ; Internal/External Switchover (Internal/External Switchover mode is enabled)
+  CONFIG  FCMEN = ON            ; Fail-Safe Clock Monitor Enable (Fail-Safe Clock Monitor is enabled)
+
+; CONFIG2
+  CONFIG  WRT = OFF             ; Flash Memory Self-Write Protection (Write protection off)
+  CONFIG  VCAPEN = OFF          ; Voltage Regulator Capacitor Enable bit (Vcap functionality is disabled on RA6.)
+  CONFIG  PLLEN = OFF            ; PLL Enable (4x PLL enabled)
+  CONFIG  STVREN = ON           ; Stack Overflow/Underflow Reset Enable (Stack Overflow or Underflow will cause a Reset)
+  CONFIG  BORV = LO             ; Brown-out Reset Voltage Selection (Brown-out Reset Voltage (Vbor), low trip point selected.)
+  CONFIG  LPBOR = OFF           ; Low Power Brown-Out Reset Enable Bit (Low power brown-out is disabled)
+  CONFIG  DEBUG = OFF           ; In-Circuit Debugger Mode (In-Circuit Debugger disabled, ICSPCLK and ICSPDAT are general purpose I/O pins)
+  CONFIG  LVP = ON             ; Low-Voltage Programming Enable (High-voltage on MCLR/VPP must be used for programming)
+
+#include <xc.inc>
+ 
+  
+PSECT udata_shr
+counter_l:
+        DS      1
+counter_h:
+	DS      1
+counter_hh:
+	DS      1
+	
+position_x1_L: 
+    DS 1 
+position_x1_H: 
+    DS 1
+position_x2_L: 
+    DS 1
+position_x2_H: 
+    DS 1
+registre_buffer: 
+    DS 1
+position_current_L: 
+    DS 1
+position_current_H: 
+    DS 1
+    
+
+buffer_V2: 
+    DS 1
+
+	
+	
+PSECT reset_vec, class = CODE, delta = 2
+reset_vec:
+        goto    start
+
+PSECT isr_vec, class = CODE, delta = 2
+        retfie
+
+
+PSECT code
+
+delay:  movlw   0xF7
+        movwf   counter_hh
+        clrf    counter_h
+        clrf    counter_l
+delay_loop:
+        incfsz  counter_l, f
+        goto    delay_loop
+        incfsz  counter_h, f
+        goto    delay_loop
+        incfsz  counter_hh, f
+        goto    delay_loop
+        return
+
+init_position: 
+	
+    ; poistion initiale 
+	; on recupère les 8 bits dans CCPR1L = 0b00011001
+	movlw 0b00010000 ; on shift de 2 positions  
+	movwf position_x1_L
+	
+	movlw 0b00000001 ; on mets les 2 bits les plus hauts de CCPR1L dans high
+	movwf position_x1_H
+	
+	; on recupère les 2 bits de poids faible du duty cycle dans CCP1CON = 0b00101100
+	movlw 0b00000011 ; on prends les bits 4 et 5 et on les shifts 
+	iorwf position_x1_L, 1 ; les 2 bits de poids faibles sont ajoutés 
+
+    ;position finale 
+	; on recupère les 8 bits dans CCPR1L = 0b01000100
+	movlw 0b01100100
+	movwf position_x2_L
+	movlw 0b00000000 ; on mets les 2 bits les plus hauts de CCPR1L dans high
+	movwf position_x2_H
+	
+	
+	; on recupère les 2 bits de poids faible du duty cycle dans CCP1CON = 0b00111100
+	movlw 0b00000010 ; on prends les bits 4 et 5 et on les shifts 
+	iorwf position_x2_L, 1 ; les 2 bits de poids faibles sont ajoutés 
+	
+	
+	;initialisation de la position current 
+	BANKSEL CCP1CON
+	movlw   0b00101100 
+	movwf   CCP1CON
+	
+	BANKSEL CCPR1L
+	movlw    0b00011001
+	movwf   CCPR1L
+	return
+	
+update_pwm_position: 
+	;movf position_x1_L, 0
+	;movwf position_current_L
+	
+	;movf position_x1_H, 0
+	;movwf position_current_H
+	
+		
+	movf position_current_L, W
+	ANDLW 0b00000011
+	movwf registre_buffer
+	LSLF registre_buffer, 1
+	LSLF registre_buffer, 1
+	LSLF registre_buffer, 1
+	LSLF registre_buffer, 1
+	
+	banksel CCP1CON
+	movf CCP1CON, W
+	andlw 0b11001111
+	movwf CCP1CON
+	
+	movf registre_buffer, w
+	banksel CCP1CON
+	IORWF CCP1CON,1 ; mets les 2 bits de poids faible du duty cycle à leurs place 4 et 5
+	
+	movf position_current_L, W
+	movwf registre_buffer
+	lsrf registre_buffer, 1
+	lsrf registre_buffer, 1
+	
+	
+	;movf registre_buffer, W
+	;movwf CCPR1L
+	
+	movf position_current_H, W
+	movwf buffer_V2
+
+	LSLF buffer_V2, 1
+	LSLF buffer_V2, 1
+	LSLF buffer_V2, 1
+	LSLF buffer_V2, 1
+	LSLF buffer_V2, 1
+	LSLF buffer_V2, 1
+	
+	;banksel CCPR1L
+	;movf CCPR1L, W
+	;andlw 0b00000011
+	;movwf CCPR1L
+	
+	movf buffer_V2, W
+	iorwf registre_buffer, w
+	banksel CCPR1L
+	movwf CCPR1L
+
+	return
+	
+	
+	
+	
+start:  movlb 0x00
+	banksel OSCCON
+        movlw   0x70
+        movwf   OSCCON
+        
+	
+        banksel TRISC
+        bcf    TRISC, 2
+	
+	banksel ANSELC
+	bcf ANSELC,2
+	
+	BANKSEL PR2
+	movlw   0xFF ; PWM periode
+        movwf   PR2
+	
+	call init_position
+	
+	movf position_x1_L, W
+	movwf position_current_L
+
+	movf position_x1_H, W
+	movwf position_current_H
+	
+	call update_pwm_position
+	
+	banksel PIR1
+    	bcf PIR1, 1
+	
+	BANKSEL T2CON
+	movlw   0x07 ; lance timer 2 et configure timer 2 prescaler
+	movwf   T2CON
+	
+	
+	
+compare: 
+	movf position_current_H, W
+	subwf position_x2_H, W  ; x2-position_current_H
+	
+	btfsc STATUS, 2 ;si les bits hauts sont égaux on check low 
+	goto check_low
+
+	btfsc STATUS, 0
+	;goto dec_case
+	goto inc_case
+	goto dec_case
+	
+	
+check_low:
+    movf position_current_L, W
+    subwf position_x2_L, W ; x2-position_x2_L
+    btfsc STATUS, 2
+    goto finish
+
+    btfsc STATUS, 0 ; si = 0 no carry et on skip et on va à inc case 
+    ;goto dec_case
+    goto inc_case
+    goto dec_case
+    
+    
+
+inc_case:
+    incf position_current_L,1
+    btfsc STATUS,2
+    incf position_current_H,1 
+    call update_pwm_position
+    call delay
+    goto compare
+
+dec_case:
+    decf position_current_L,1
+    btfss STATUS,2
+    goto no_borrow
+    decf position_current_H,1
+    movlw 0b11111111
+    movwf position_current_L
+    
+    call update_pwm_position ; ajout
+    call delay ; ajout
+    goto compare ; ajout
+no_borrow: 
+    call update_pwm_position
+    call delay
+    goto compare
+finish: 
+    goto finish 
+    ;end reset_vec
+
+    
+
+;end reset_vec
+
+
+	
+
