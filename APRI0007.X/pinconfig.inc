@@ -11,20 +11,20 @@
 ; ---------------------------------------------------------------
 ; PIN ASSIGNMENT TABLE
 ; ---------------------------------------------------------------
-; Pin   Function         Dir   Analog  Pull-up  PPS
+; Pin   Function         Dir   Analog  Pull-up  PPS / Note
 ; ----  ---------------  ----  ------  -------  ----------------
-; RA0   (unused)         in    no      YES      -
-; RA1   (unused)         in    no      YES      -
-; RA2   (unused)         in    no      YES      -
-; RA3   (unused)         in    no      YES      -
-; RA4   (unused)         in    no      YES      -
-; RA5   (unused)         in    no      YES      -
-; RA6   (unused)         in    no      YES      -
-; RA7   (unused)         in    no      YES      -
+; RA0   (unused)        in    no      no       - (freed from old parallel LCD)
+; RA1   (unused)        in    no      no       -
+; RA2   (unused)        in    no      no       -
+; RA3   (unused)        in    no      no       -
+; RA4   (unused)        in    no      YES      -
+; RA5   (unused)        in    no      YES      -
+; RA6   (unused)        in    no      YES      -
+; RA7   (unused)        in    no      YES      -
 ;
 ; RB0   Button 1 (RIGHT) in   no      YES      -
 ; RB1   Button 2 (LEFT)  in   no      YES      -
-; RB2   (unused)         in    no      YES      -
+; RB2   Hall INT2        in    no      YES      - (rising edge counter)
 ; RB3   (unused)         in    no      YES      -
 ; RB4   (unused)         in    no      YES      -
 ; RB5   (unused)         in    no      YES      -
@@ -33,18 +33,18 @@
 ;
 ; RC0   (unused)         in    no      YES      -
 ; RC1   (unused)         in    no      YES      -
-; RC2   Servo PWM        out   no      YES      - (SW toggle)
-; RC3   (unused)         in    no      YES      -
-; RC4   (unused)         in    no      YES      -
+; RC2   Servo PWM        out   no      no       - (SW toggle in ISR)
+; RC3   I2C SCL          out   no      no       - OPEN-DRAIN (ODCONC bit 3)
+; RC4   I2C SDA          out   no      no       - OPEN-DRAIN (ODCONC bit 4)
 ; RC5   (unused)         in    no      YES      -
 ; RC6   (unused)         in    no      YES      -
 ; RC7   (unused)         in    no      YES      -
 ;
-; RD0   LED feedback     out   no      YES      -
-; RD1   DEBUG: init OK   out   no      YES      -  (wire LED)
-; RD2   DEBUG: ISR fire  out   no      YES      -  (wire LED)
-; RD3   (unused)         in    no      YES      -
-; RD4   (unused)         in    no      YES      -
+; RD0   LED feedback     out   no      no       -
+; RD1   DEBUG: Servo OK  out   no      no       -  (LED: Servo_Init done)
+; RD2   DEBUG: Servo ISR out   no      no       -  (LED: ISR toggling)
+; RD3   DEBUG: Hall ISR  out   no      no       -  (LED: Hall pulse seen)
+; RD4   (unused)         in    no      YES      - (freed from old parallel LCD)
 ; RD5   (unused)         in    no      YES      -
 ; RD6   (unused)         in    no      YES      -
 ; RD7   (unused)         in    no      YES      -
@@ -154,7 +154,8 @@ PinConfig_Init:
     ; LAT registers also in bank 4 - no BANKSEL needed
     clrf    BANKMASK(LATA), 1           ; PORTA = 0x00
     clrf    BANKMASK(LATB), 1           ; PORTB = 0x00
-    clrf    BANKMASK(LATC), 1           ; PORTC = 0x00  (RC2 servo LOW)
+    movlw   0x18                        ; RC3=1 (SCL idle HIGH), RC4=1 (SDA idle HIGH)
+    movwf   BANKMASK(LATC), 1           ; RC2=0 (servo starts LOW)
     clrf    BANKMASK(LATD), 1           ; PORTD = 0x00  (RD0 LED OFF)
     clrf    BANKMASK(LATE), 1           ; PORTE = 0x00
 
@@ -164,18 +165,34 @@ PinConfig_Init:
     ;    Only clear bits for pins used as outputs.
     ; ==================================================================
     ; TRIS registers also in bank 4 - no BANKSEL needed
-    movlw   0xFF
-    movwf   BANKMASK(TRISA), 1          ; PORTA all inputs
-    movwf   BANKMASK(TRISB), 1          ; PORTB all inputs (RB0,RB1 buttons)
-    movlw   0xFB                        ; bit 2 clear = RC2 output (servo)
-    movwf   BANKMASK(TRISC), 1
-    movlw   0xF8                        ; bits 0,1,2 clear = RD0,RD1,RD2 out
-    movwf   BANKMASK(TRISD), 1
+    movlw   0xFF                        ; PORTA all inputs (RA0-RA3 freed from parallel LCD)
+    movwf   BANKMASK(TRISA), 1
+    movlw   0xFF                        ; PORTB all inputs (RB0,RB1 buttons; RB2 Hall INT2)
+    movwf   BANKMASK(TRISB), 1
+    movlw   0xE3                        ; bits 2,3,4 clear = RC2 (servo), RC3 (SCL), RC4 (SDA)
+    movwf   BANKMASK(TRISC), 1          ; 0xE3 = 0b11100011
+    movlw   0xF0                        ; bits 0-3 clear = RD0-RD3 LED/debug outputs
+    movwf   BANKMASK(TRISD), 1          ; RD4,RD5 freed (parallel LCD no longer used)
     movlw   0xFF
     movwf   BANKMASK(TRISE), 1          ; PORTE all inputs (RE3=MCLR)
 
     ; ==================================================================
-    ; 5. PPS - PERIPHERAL PIN SELECT  (bank 2: 0x200-0x26B)
+    ; 5. OPEN-DRAIN CONTROL  (ODCONx : 1=open-drain, 0=push-pull)
+    ;    RC3 (SCL) and RC4 (SDA) MUST be open-drain for I2C.
+    ;    Open-drain: bsf LATC,3/4 releases pin (pulled HIGH by 4.7kΩ
+    ;    resistors on PCF8574 backpack); bcf LATC,3/4 drives it LOW.
+    ;    All other output pins remain push-pull (default).
+    ; ==================================================================
+    ; ODCON registers are in bank 4 - no BANKSEL needed
+    clrf    BANKMASK(ODCONA), 1         ; PORTA push-pull
+    clrf    BANKMASK(ODCONB), 1         ; PORTB push-pull
+    movlw   0x18                        ; bits 3,4 = RC3 (SCL), RC4 (SDA) open-drain
+    movwf   BANKMASK(ODCONC), 1
+    clrf    BANKMASK(ODCOND), 1         ; PORTD push-pull (LED outputs)
+    clrf    BANKMASK(ODCONE), 1         ; PORTE push-pull
+
+    ; ==================================================================
+    ; 6. PPS - PERIPHERAL PIN SELECT  (bank 2: 0x200-0x26B)
     ;    Configure remappable I/O routing here.
     ;    Currently no PPS needed (servo uses CCP1 SW toggle, buttons
     ;    are direct GPIO reads).

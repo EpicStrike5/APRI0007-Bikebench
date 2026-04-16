@@ -57,6 +57,7 @@ resetVec:
 #include "can_torque.inc"
 #include "debounce.inc"
 #include "hall.inc"
+#include "lcd.inc"
 
 ; ---- Main variables (edge detection) ----
 ; btn_prev tracks the last-seen db_stable value so the main loop can
@@ -66,6 +67,9 @@ resetVec:
 PSECT udata_acs
 btn_prev:       DS 1            ; db_stable value from previous loop iteration
 btn_edge:       DS 1            ; scratch: bits that just transitioned released->pressed
+main_ctr:       DS 1            ; free-running loop counter (0-255, wraps), never touched by ISR
+hall_snap_l:    DS 1            ; atomic snapshot of hall_count_l (taken with GIE=0)
+hall_snap_h:    DS 1            ; atomic snapshot of hall_count_h (taken with GIE=0)
 
 ; ---- Main Code ----
 PSECT code
@@ -99,11 +103,68 @@ start:
     movwf   btn_prev, c
     call    Servo_Init
     call    Hall_Init
+    call    LCD_I2C_Scan            ; find PCF8574 address, sets lcd_i2c_addr
+    ; --- Scan result feedback on RD0 ---
+    ; lcd_ack=0 (found): 3 fast blinks then continue
+    ; lcd_ack=1 (not found): rapid continuous blink = wiring problem
+    tstfsz  lcd_ack, c
+    bra     _scan_fail
+    ; Found: 3 fast blinks
+    movlw   3
+    movwf   btn_prev, c             ; reuse btn_prev as blink counter (seeded below anyway)
+_scan_ok_blink:
+    BANKSEL LATD
+    bsf     BANKMASK(LATD), 0, 1
+    movlw   80
+    call    waitMilliSeconds
+    BANKSEL LATD
+    bcf     BANKMASK(LATD), 0, 1
+    movlw   80
+    call    waitMilliSeconds
+    decfsz  btn_prev, f, c
+    bra     _scan_ok_blink
+    bra     _scan_done
+_scan_fail:
+    BANKSEL LATD
+    btg     BANKMASK(LATD), 0, 1    ; toggle LED rapidly = no device found
+    movlw   120
+    call    waitMilliSeconds
+    bra     _scan_fail              ; loops forever: fix wiring before proceeding
+_scan_done:
+    movf    db_stable, w, c         ; re-seed btn_prev (was used as blink counter)
+    movwf   btn_prev, c
+    call    LCD_Init
+    ; Hello World test — confirms LCD wiring and init are correct
+    call    LCD_GotoLine1
+    movlw   'H'
+    call    LCD_SendChar
+    movlw   'e'
+    call    LCD_SendChar
+    movlw   'l'
+    call    LCD_SendChar
+    movlw   'l'
+    call    LCD_SendChar
+    movlw   'o'
+    call    LCD_SendChar
+    call    LCD_GotoLine2
+    movlw   'W'
+    call    LCD_SendChar
+    movlw   'o'
+    call    LCD_SendChar
+    movlw   'r'
+    call    LCD_SendChar
+    movlw   'l'
+    call    LCD_SendChar
+    movlw   'd'
+    call    LCD_SendChar
+    movlw   '!'
+    call    LCD_SendChar
     BANKSEL INTCON0
     bsf     BANKMASK(INTCON0), 6, 1     ; GIEL = 1  (low-priority interrupts)
     bsf     BANKMASK(INTCON0), 7, 1     ; GIE/GIEH = 1 (high-priority)
     movlw   100
     call    waitMilliSeconds
+    clrf    main_ctr, c                 ; initialise loop counter after interrupts live
 
     ; ==========================================================
     ; MAIN LOOP
@@ -136,8 +197,10 @@ mainLoop:
     btfss   btn_edge, 1, c             ; skip if button 2 not just pressed
     call    handleButton2
 
-    ; --- Delay ~20ms (debounce ISR fires at 10ms; poll at 20ms is fine) ---
-    movlw   20
+    ; --- Increment loop counter then refresh LCD ---
+    incf    main_ctr, f, c              ; wraps 255→0, no ISR conflict
+    call    LCD_RefreshDisplay
+    movlw   200
     call    waitMilliSeconds
 
     goto    mainLoop
@@ -155,6 +218,74 @@ handleButton2:
     call    Servo_DecPos                ; decrease angle
     BANKSEL LATD
     bcf     BANKMASK(LATD), 0, 1       ; LED OFF = moving left
+    return
+
+; ------------------------------------------------------------------
+; LCD_RefreshDisplay
+; Full redraw of both lines every call — no stale chars possible.
+;
+; Line 1: "HallH: XXX" — hall_count_h, high byte of captured hall count.
+; Line 2: "HallL: XXX" — hall_count_l, low byte of captured hall count.
+;
+; Atomicity: hall_count_h:hall_count_l is a 2-byte value updated by the
+;   TMR0 ISR in two separate instructions.  A torn read is possible if an
+;   interrupt fires between the two movf instructions.
+;   Fix: disable GIE for exactly 4 instructions (~250 ns @ 64 MHz) while
+;   copying both bytes into local snapshots hall_snap_h:hall_snap_l, then
+;   re-enable and display from the snapshots.  Servo and debounce ISRs
+;   are delayed at most one timer tick — harmless.
+; ------------------------------------------------------------------
+LCD_RefreshDisplay:
+    ; Atomic 2-byte snapshot of hall_count_h:hall_count_l.
+    ; GIE=0 window = 4 instructions ~250ns @ 64MHz.
+    ; Servo and debounce ISRs delayed at most one tick — harmless.
+    BANKSEL INTCON0
+    bcf     BANKMASK(INTCON0), 7, 1     ; GIE=0 — mask all interrupts
+    movf    hall_count_l, w, c
+    movwf   hall_snap_l, c
+    movf    hall_count_h, w, c
+    movwf   hall_snap_h, c
+    bsf     BANKMASK(INTCON0), 7, 1     ; GIE=1 — re-enable
+
+    ; --- Line 1: "HallH: XXX" ---
+    movlw   0x80                    ; DDRAM addr 0x00 -> line 1, col 1
+    call    _LCD_SendCmd
+    movlw   'H'
+    call    LCD_SendChar
+    movlw   'a'
+    call    LCD_SendChar
+    movlw   'l'
+    call    LCD_SendChar
+    movlw   'l'
+    call    LCD_SendChar
+    movlw   'H'
+    call    LCD_SendChar
+    movlw   ':'
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movf    hall_snap_h, w, c
+    call    LCD_SendDec
+
+    ; --- Line 2: "HallL: XXX" ---
+    movlw   0xC0                    ; DDRAM addr 0x40 -> line 2, col 1
+    call    _LCD_SendCmd
+    movlw   'H'
+    call    LCD_SendChar
+    movlw   'a'
+    call    LCD_SendChar
+    movlw   'l'
+    call    LCD_SendChar
+    movlw   'l'
+    call    LCD_SendChar
+    movlw   'L'
+    call    LCD_SendChar
+    movlw   ':'
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movf    hall_snap_l, w, c
+    call    LCD_SendDec
     return
 
     END     resetVec

@@ -47578,12 +47578,12 @@ ws_loop:
 ; ---------------------------------------------------------------
 ; PIN ASSIGNMENT TABLE
 ; ---------------------------------------------------------------
-; Pin Function Dir Analog Pull-up PPS
+; Pin Function Dir Analog Pull-up PPS / Note
 ; ---- --------------- ---- ------ ------- ----------------
-; ((PORTA) and 0FFh), 0, a (unused) in no YES -
-; ((PORTA) and 0FFh), 1, a (unused) in no YES -
-; ((PORTA) and 0FFh), 2, a (unused) in no YES -
-; ((PORTA) and 0FFh), 3, a (unused) in no YES -
+; ((PORTA) and 0FFh), 0, a (unused) in no no - (freed from old parallel LCD)
+; ((PORTA) and 0FFh), 1, a (unused) in no no -
+; ((PORTA) and 0FFh), 2, a (unused) in no no -
+; ((PORTA) and 0FFh), 3, a (unused) in no no -
 ; ((PORTA) and 0FFh), 4, a (unused) in no YES -
 ; ((PORTA) and 0FFh), 5, a (unused) in no YES -
 ; ((PORTA) and 0FFh), 6, a (unused) in no YES -
@@ -47591,7 +47591,7 @@ ws_loop:
 ;
 ; ((PORTB) and 0FFh), 0, a Button 1 (RIGHT) in no YES -
 ; ((PORTB) and 0FFh), 1, a Button 2 (LEFT) in no YES -
-; ((PORTB) and 0FFh), 2, a (unused) in no YES -
+; ((PORTB) and 0FFh), 2, a Hall INT2 in no YES - (rising edge counter)
 ; ((PORTB) and 0FFh), 3, a (unused) in no YES -
 ; ((PORTB) and 0FFh), 4, a (unused) in no YES -
 ; ((PORTB) and 0FFh), 5, a (unused) in no YES -
@@ -47600,18 +47600,18 @@ ws_loop:
 ;
 ; ((PORTC) and 0FFh), 0, a (unused) in no YES -
 ; ((PORTC) and 0FFh), 1, a (unused) in no YES -
-; ((PORTC) and 0FFh), 2, a Servo PWM out no YES - (SW toggle)
-; ((PORTC) and 0FFh), 3, a (unused) in no YES -
-; ((PORTC) and 0FFh), 4, a (unused) in no YES -
+; ((PORTC) and 0FFh), 2, a Servo PWM out no no - (SW toggle in ISR)
+; ((PORTC) and 0FFh), 3, a I2C SCL out no no - OPEN-DRAIN (ODCONC bit 3)
+; ((PORTC) and 0FFh), 4, a I2C SDA out no no - OPEN-DRAIN (ODCONC bit 4)
 ; ((PORTC) and 0FFh), 5, a (unused) in no YES -
 ; ((PORTC) and 0FFh), 6, a (unused) in no YES -
 ; ((PORTC) and 0FFh), 7, a (unused) in no YES -
 ;
-; ((PORTD) and 0FFh), 0, a LED feedback out no YES -
-; ((PORTD) and 0FFh), 1, a DEBUG: init OK out no YES - (wire LED)
-; ((PORTD) and 0FFh), 2, a DEBUG: ISR fire out no YES - (wire LED)
-; ((PORTD) and 0FFh), 3, a (unused) in no YES -
-; ((PORTD) and 0FFh), 4, a (unused) in no YES -
+; ((PORTD) and 0FFh), 0, a LED feedback out no no -
+; ((PORTD) and 0FFh), 1, a DEBUG: Servo OK out no no - (LED: Servo_Init done)
+; ((PORTD) and 0FFh), 2, a DEBUG: Servo ISR out no no - (LED: ISR toggling)
+; ((PORTD) and 0FFh), 3, a DEBUG: Hall ISR out no no - (LED: Hall pulse seen)
+; ((PORTD) and 0FFh), 4, a (unused) in no YES - (freed from old parallel LCD)
 ; ((PORTD) and 0FFh), 5, a (unused) in no YES -
 ; ((PORTD) and 0FFh), 6, a (unused) in no YES -
 ; ((PORTD) and 0FFh), 7, a (unused) in no YES -
@@ -47721,7 +47721,8 @@ PinConfig_Init:
     ; LAT registers also in bank 4 - no BANKSEL needed
     clrf ((LATA) and 0FFh), 1 ; PORTA = 0x00
     clrf ((LATB) and 0FFh), 1 ; PORTB = 0x00
-    clrf ((LATC) and 0FFh), 1 ; PORTC = 0x00 (((PORTC) and 0FFh), 2, a servo LOW)
+    movlw 0x18 ; ((PORTC) and 0FFh), 3, a=1 (SCL idle HIGH), ((PORTC) and 0FFh), 4, a=1 (SDA idle HIGH)
+    movwf ((LATC) and 0FFh), 1 ; ((PORTC) and 0FFh), 2, a=0 (servo starts LOW)
     clrf ((LATD) and 0FFh), 1 ; PORTD = 0x00 (((PORTD) and 0FFh), 0, a LED OFF)
     clrf ((LATE) and 0FFh), 1 ; PORTE = 0x00
 
@@ -47731,18 +47732,34 @@ PinConfig_Init:
     ; Only clear bits for pins used as outputs.
     ; ==================================================================
     ; TRIS registers also in bank 4 - no BANKSEL needed
-    movlw 0xFF
-    movwf ((TRISA) and 0FFh), 1 ; PORTA all inputs
-    movwf ((TRISB) and 0FFh), 1 ; PORTB all inputs (((PORTB) and 0FFh), 0, a,((PORTB) and 0FFh), 1, a buttons)
-    movlw 0xFB ; bit 2 clear = ((PORTC) and 0FFh), 2, a output (servo)
-    movwf ((TRISC) and 0FFh), 1
-    movlw 0xF8 ; bits 0,1,2 clear = ((PORTD) and 0FFh), 0, a,((PORTD) and 0FFh), 1, a,((PORTD) and 0FFh), 2, a out
-    movwf ((TRISD) and 0FFh), 1
+    movlw 0xFF ; PORTA all inputs (((PORTA) and 0FFh), 0, a-((PORTA) and 0FFh), 3, a freed from parallel LCD)
+    movwf ((TRISA) and 0FFh), 1
+    movlw 0xFF ; PORTB all inputs (((PORTB) and 0FFh), 0, a,((PORTB) and 0FFh), 1, a buttons; ((PORTB) and 0FFh), 2, a Hall INT2)
+    movwf ((TRISB) and 0FFh), 1
+    movlw 0xE3 ; bits 2,3,4 clear = ((PORTC) and 0FFh), 2, a (servo), ((PORTC) and 0FFh), 3, a (SCL), ((PORTC) and 0FFh), 4, a (SDA)
+    movwf ((TRISC) and 0FFh), 1 ; 0xE3 = 0b11100011
+    movlw 0xF0 ; bits 0-3 clear = ((PORTD) and 0FFh), 0, a-((PORTD) and 0FFh), 3, a LED/debug outputs
+    movwf ((TRISD) and 0FFh), 1 ; ((PORTD) and 0FFh), 4, a,((PORTD) and 0FFh), 5, a freed (parallel LCD no longer used)
     movlw 0xFF
     movwf ((TRISE) and 0FFh), 1 ; PORTE all inputs (((PORTE) and 0FFh), 3, a=MCLR)
 
     ; ==================================================================
-    ; 5. PPS - PERIPHERAL PIN SELECT (bank 2: 0x200-0x26B)
+    ; 5. OPEN-DRAIN CONTROL (ODCONx : 1=open-drain, 0=push-pull)
+    ; ((PORTC) and 0FFh), 3, a (SCL) and ((PORTC) and 0FFh), 4, a (SDA) MUST be open-drain for I2C.
+    ; Open-drain: bsf LATC,3/4 releases pin (pulled HIGH by 4.7kΩ
+    ; resistors on PCF8574 backpack); bcf LATC,3/4 drives it LOW.
+    ; All other output pins remain push-pull (default).
+    ; ==================================================================
+    ; ODCON registers are in bank 4 - no BANKSEL needed
+    clrf ((ODCONA) and 0FFh), 1 ; PORTA push-pull
+    clrf ((ODCONB) and 0FFh), 1 ; PORTB push-pull
+    movlw 0x18 ; bits 3,4 = ((PORTC) and 0FFh), 3, a (SCL), ((PORTC) and 0FFh), 4, a (SDA) open-drain
+    movwf ((ODCONC) and 0FFh), 1
+    clrf ((ODCOND) and 0FFh), 1 ; PORTD push-pull (LED outputs)
+    clrf ((ODCONE) and 0FFh), 1 ; PORTE push-pull
+
+    ; ==================================================================
+    ; 6. PPS - PERIPHERAL PIN SELECT (bank 2: 0x200-0x26B)
     ; Configure remappable I/O routing here.
     ; Currently no PPS needed (servo uses CCP1 SW toggle, buttons
     ; are direct GPIO reads).
@@ -48582,6 +48599,660 @@ Debounce_Init:
     ; Caller must enable ((INTCON0) and 0FFh), 7, a after this returns
     return
 # 59 "main.asm" 2
+# 1 "./hall.inc" 1
+;======================================================================
+; hall.inc - Hall Sensor Counter (pic-as syntax)
+; Processor: PIC18F47Q84 @ 64MHz
+;
+; Monitors ((PORTB) and 0FFh), 2, a (INT2, rising edge) for hall sensor pulses.
+; Counts events per interval. Every HALL_TMR0_INTERVAL Timer0
+; overflows (~3.1s), captures the running count into
+; hall_count_h:hall_count_l and resets for the next interval.
+;
+; Timer0 timing:
+; Clock = Fosc/4 = 16 MHz, prescaler = 1:32768
+; Tick rate = 16 MHz / 32768 = 488.28 Hz
+; 8-bit overflow period = 256 / 488.28 = ~0.524 s
+; Capture interval = 6 overflows = ~3.1 s
+;
+; IRQ assignments (PIC18F47Q84 MVECEN=ON):
+; IRQ 31 = ((SMT1TMRL) and 0FFh), 0, b overflow (PIR3 bit 7, PIE3 bit 7)
+; IRQ 80 = INT2 rising edge (PIR10 bit 0, PIE10 bit 0)
+;
+; Public interface:
+; Hall_Init - configure ((PORTB) and 0FFh), 2, a, enable INT2 and Timer0 interrupts
+; hall_count_l - most recent captured count, low byte (read directly)
+; hall_count_h - most recent captured count, high byte (read directly)
+;
+; ((PORTD) and 0FFh), 2, a toggles on every INT2 pulse (diagnostic).
+; ((PORTD) and 0FFh), 0, a blinks once per capture interval, then blinks hall_count_l times.
+;
+; NOTE: DisplayHallCount is called from inside the ((SMT1TMRL) and 0FFh), 0, b ISR.
+; This blocks all other ISRs for the duration of the blink sequence
+; (~300ms per blink * hall_count_l). Acceptable for diagnostics.
+; waitMilliSeconds uses only access-bank variables so BSR is safe.
+;
+; Caller enables ((INTCON0) and 0FFh), 7, a (INTCON0 bit 7) and ((INTCON0) and 0FFh), 6, a (INTCON0 bit 6)
+; after all _Init calls return.
+;======================================================================
+
+HALL_TMR0_INTERVAL equ 6 ; Timer0 overflows per capture (~3.1s)
+
+; ---- Variables (Access Bank) ----
+PSECT udata_acs
+hall_counter: DS 1 ; event count in current interval
+hall_overflow: DS 1 ; increments when hall_counter wraps 255->0
+hall_tmr0_ticks: DS 1 ; Timer0 overflow counter
+hall_count_l: DS 1 ; last captured count, low byte (output)
+hall_count_h: DS 1 ; last captured count, high byte (output)
+blink_counter: DS 1 ; remaining blinks for DisplayHallCount
+
+; ---- INT2 ISR (IRQ 80) ----
+PSECT isrHallINT2, class=CODE, reloc=4
+Hall_INT2_ISR:
+    BANKSEL PIR10
+    bcf ((PIR10) and 0FFh), 0, 1 ; clear ((PIR10) and 0FFh), 0, a
+    BANKSEL LATD
+    btg ((LATD) and 0FFh), 2, 1 ; toggle ((PORTD) and 0FFh), 2, a on every hall pulse
+    incfsz hall_counter, f, c ; increment; skip if result = 0 (wrapped)
+    bra _hall_no_overflow
+    incf hall_overflow, f, c ; propagate wrap to high counter
+_hall_no_overflow:
+    retfie 1
+
+; ---- ((SMT1TMRL) and 0FFh), 0, b ISR (IRQ 31) ----
+PSECT isrHallTMR0, class=CODE, reloc=4
+Hall_TMR0_ISR:
+    BANKSEL PIR3
+    bcf ((PIR3) and 0FFh), 7, 1 ; clear ((PIR3) and 0FFh), 7, a
+
+    ; Count overflows; act when interval reached
+    incf hall_tmr0_ticks, f, c
+    movlw HALL_TMR0_INTERVAL
+    subwf hall_tmr0_ticks, w, c ; W = ticks - INTERVAL
+    btfss STATUS, 2, c ; skip if Z (ticks == INTERVAL)
+    bra _hall_tmr0_exit
+
+    ; Interval blink: 100ms ON to mark capture moment
+    BANKSEL LATD
+    bsf ((LATD) and 0FFh), 0, 1 ; LED D0 ON
+    movlw 100
+    call waitMilliSeconds
+    BANKSEL LATD
+    bcf ((LATD) and 0FFh), 0, 1 ; LED D0 OFF
+
+    ; Capture hall_overflow:hall_counter into hall_count_h:hall_count_l
+    clrf hall_tmr0_ticks, c
+    movf hall_counter, w, c
+    movwf hall_count_l, c
+    movf hall_overflow, w, c
+    movwf hall_count_h, c
+    ; Reset event counters for next interval
+    clrf hall_counter, c
+    clrf hall_overflow, c
+
+    ; Blink ((PORTD) and 0FFh), 0, a hall_count_l times to display pulse count
+    call DisplayHallCount
+
+_hall_tmr0_exit:
+    retfie 1
+
+; ---- IVT entries ----
+PSECT ivt, class=CODE, reloc=2, ovrld
+    ORG 80*2
+    DW Hall_INT2_ISR >> 2
+    ORG 31*2
+    DW Hall_TMR0_ISR >> 2
+
+; ---- Code ----
+PSECT code
+
+;----------------------------------------------------------------------
+; DisplayHallCount
+; Blinks ((PORTD) and 0FFh), 0, a a number of times equal to hall_count_l.
+; Skips entirely if hall_count_l == 0.
+; Each blink: 100ms ON, 200ms OFF.
+; Called from ((SMT1TMRL) and 0FFh), 0, b ISR — interrupts are blocked during blink sequence.
+;----------------------------------------------------------------------
+DisplayHallCount:
+    movf hall_count_l, w, c
+    bz _dhc_done ; nothing to display
+    movwf blink_counter, c
+_dhc_blink_loop:
+    BANKSEL LATD
+    bsf ((LATD) and 0FFh), 0, 1 ; LED ON
+    movlw 100
+    call waitMilliSeconds
+    BANKSEL LATD
+    bcf ((LATD) and 0FFh), 0, 1 ; LED OFF
+    movlw 200
+    call waitMilliSeconds
+    decfsz blink_counter, f, c
+    bra _dhc_blink_loop
+_dhc_done:
+    return
+
+;----------------------------------------------------------------------
+; Hall_Init
+; Configures ((PORTB) and 0FFh), 2, a as digital input, enables INT2 (rising edge) and
+; Timer0 interrupts.
+; Call before enabling ((INTCON0) and 0FFh), 7, a/((INTCON0) and 0FFh), 6, a.
+;----------------------------------------------------------------------
+Hall_Init:
+    ; ((PORTB) and 0FFh), 2, a: digital input (pinconfig sets all ANSEL/TRIS, but set explicitly
+    ; here so Hall_Init is self-contained and order-independent)
+    BANKSEL ANSELB
+    bcf ((ANSELB) and 0FFh), 2, 1 ; ((PORTB) and 0FFh), 2, a digital
+    BANKSEL TRISB
+    bsf ((TRISB) and 0FFh), 2, 1 ; ((PORTB) and 0FFh), 2, a input
+
+    ; INT2: rising edge, clear flag, enable
+    BANKSEL INTCON0
+    bsf ((INTCON0) and 0FFh), 5, 1 ; ((INTCON0) and 0FFh), 2, a = 1 (rising edge)
+    BANKSEL PIR10
+    bcf ((PIR10) and 0FFh), 0, 1 ; clear ((PIR10) and 0FFh), 0, a
+    BANKSEL PIE10
+    bsf ((PIE10) and 0FFh), 0, 1 ; ((PIE10) and 0FFh), 0, a = 1
+
+    ; Timer0: Fosc/4, 1:32768 prescaler, 8-bit mode, timer off initially
+    BANKSEL T0CON0
+    clrf ((T0CON0) and 0FFh), 1 ; ((T0CON0) and 0FFh), 7, b=0, 8-bit mode (bit3=0)
+    BANKSEL T0CON1
+    movlw 0x4F ; T0CS=Fosc/4, sync, CKPS=1:32768
+    movwf ((T0CON1) and 0FFh), 1
+    BANKSEL PIR3
+    bcf ((PIR3) and 0FFh), 7, 1 ; clear ((PIR3) and 0FFh), 7, a
+    BANKSEL PIE3
+    bsf ((PIE3) and 0FFh), 7, 1 ; ((PIE3) and 0FFh), 7, a = 1
+
+    ; Initialise all variables
+    clrf hall_counter, c
+    clrf hall_overflow, c
+    clrf hall_tmr0_ticks, c
+    clrf hall_count_l, c
+    clrf hall_count_h, c
+    clrf blink_counter, c
+
+    ; Start Timer0
+    BANKSEL T0CON0
+    bsf ((T0CON0) and 0FFh), 7, 1 ; ((T0CON0) and 0FFh), 7, b = 1
+
+    return
+# 60 "main.asm" 2
+# 1 "./lcd.inc" 1
+;======================================================================
+; lcd.inc — HD44780 via PCF8574 I2C backpack, pic-as, PIC18F47Q84 @ 64 MHz
+;
+; PIN MAPPING — Type A (YwRobot / QAPASS 1602A / LiquidCrystal_I2C)
+;
+; PCF pin P7 P6 P5 P4 | P3 P2 P1 P0
+; Signal D7 D6 D5 D4 | BL E RW RS
+;
+; BL = 0x08 (bit 3) backlight enable, 1=on
+; E = 0x04 (bit 2) enable pulse
+; RW = 0x02 (bit 1) always 0 (write only)
+; RS = 0x01 (bit 0) register select: 0=command, 1=data
+; data nibble in bits 7:4 (D7:D4)
+;
+; SOURCE
+; Translated directly from I2C_LCD.c (working C reference).
+; Every function maps 1:1 to its C equivalent.
+; I2C is bit-bang on ((PORTC) and 0FFh), 3, a(SCL) / ((PORTC) and 0FFh), 4, a(SDA), open-drain, ~100 kHz.
+; pinconfig.inc must set ODCONC bits 3,4=1 LATC bits 3,4=1 at idle.
+;
+; PUBLIC FUNCTIONS
+; LCD_I2C_Scan find PCF8574 I2C address (call before LCD_Init)
+; LCD_Init power-on initialisation
+; LCD_Clear clear display + cursor home
+; LCD_GotoLine1 cursor to line 1 col 1
+; LCD_GotoLine2 cursor to line 2 col 1
+; _LCD_SendCmd send 8-bit command in W (also called by main.asm)
+; LCD_SendChar display ASCII char in W
+; LCD_SendDec display W (0-255) as 3-digit decimal
+; LCD_WriteString FSR0 → null-terminated string in RAM
+;
+; Requires: wait.inc (uses waitMilliSeconds)
+;======================================================================
+
+; ---- I2C address default ----
+
+
+
+
+; ---- Backlight / control bit masks ----
+
+
+
+
+
+; ---- Access-bank variables ----
+; Each call level gets its own scratch byte so there are no conflicts:
+; _LCD_IO_Write → uses lcd_io_byte
+; _LCD_Write4Bit → uses lcd_nib_byte (calls _LCD_IO_Write)
+; _LCD_SendCmd / LCD_SendChar → use lcd_cmd_byte (call _LCD_Write4Bit)
+;
+PSECT udata_acs
+lcd_ack: DS 1 ; ACK result from last I2C write: 0=ACK, 1=NACK
+                        ; *** main.asm reads this directly after LCD_I2C_Scan ***
+lcd_addr: DS 1 ; I2C write address found by scan (e.g. 0x4E for 0x27)
+lcd_bl: DS 1 ; backlight byte: 0x08=on, 0x00=off
+lcd_rs: DS 1 ; RS byte to OR into nibble: 0x00=command, 0x01=data
+lcd_cmd_byte: DS 1 ; scratch for _LCD_SendCmd / LCD_SendChar (level 3)
+lcd_nib_byte: DS 1 ; scratch for _LCD_Write4Bit (level 2)
+lcd_io_byte: DS 1 ; scratch for _LCD_IO_Write (level 1)
+lcd_i2c_sr: DS 1 ; I2C shift register
+lcd_i2c_bits: DS 1 ; I2C bit counter
+lcd_i2c_dly: DS 1 ; I2C half-period counter
+lcd_n_bit: DS 1 ; LCD_SendDec: digit counter
+lcd_tampon: DS 1 ; LCD_SendDec: working value
+lcd_flag: DS 1 ; LCD_SendDec: leading-zero flag
+
+PSECT code
+
+;======================================================================
+; I2C BIT-BANG LAYER
+; ((PORTC) and 0FFh), 3, a = SCL (LATC bit 3)
+; ((PORTC) and 0FFh), 4, a = SDA (LATC bit 4)
+; Both are open-drain outputs (ODCONC bits 3,4 = 1).
+; Writing LAT=1 releases the pin to the pull-up resistor (= HIGH).
+; Writing LAT=0 actively pulls LOW.
+; PORTC always reads the actual pin voltage regardless of TRIS.
+;======================================================================
+
+;----------------------------------------------------------------------
+; _LCD_I2C_HalfPeriod — ~5 µs busy-wait (100 kHz half-period)
+; 27 × 3 cycles + 2 = 83 cyc × 62.5 ns ≈ 5.2 µs
+;----------------------------------------------------------------------
+_LCD_I2C_HalfPeriod:
+    movlw 27
+    movwf lcd_i2c_dly, c
+_lcd_hp_loop:
+    decfsz lcd_i2c_dly, f, c
+    bra _lcd_hp_loop
+    return
+
+;----------------------------------------------------------------------
+; _LCD_I2C_Start — START condition
+; SDA falls while SCL is HIGH. Returns with SCL LOW.
+;----------------------------------------------------------------------
+_LCD_I2C_Start:
+    BANKSEL LATC
+    bsf ((LATC) and 0FFh), 4, 1 ; SDA HIGH (ensure idle)
+    bsf ((LATC) and 0FFh), 3, 1 ; SCL HIGH
+    call _LCD_I2C_HalfPeriod
+    bcf ((LATC) and 0FFh), 4, 1 ; SDA LOW while SCL HIGH = START
+    call _LCD_I2C_HalfPeriod
+    bcf ((LATC) and 0FFh), 3, 1 ; SCL LOW
+    call _LCD_I2C_HalfPeriod
+    return
+
+;----------------------------------------------------------------------
+; _LCD_I2C_Stop — STOP condition
+; SDA rises while SCL is HIGH. Bus idles HIGH after return.
+;----------------------------------------------------------------------
+_LCD_I2C_Stop:
+    BANKSEL LATC
+    bcf ((LATC) and 0FFh), 4, 1 ; SDA LOW (setup before stop)
+    call _LCD_I2C_HalfPeriod
+    bsf ((LATC) and 0FFh), 3, 1 ; SCL HIGH
+    call _LCD_I2C_HalfPeriod
+    bsf ((LATC) and 0FFh), 4, 1 ; SDA HIGH while SCL HIGH = STOP
+    call _LCD_I2C_HalfPeriod
+    return
+
+;----------------------------------------------------------------------
+; _LCD_I2C_WriteByte — transmit W MSB-first, capture ACK → lcd_ack
+; lcd_ack = 0 : slave ACKed
+; lcd_ack = 1 : NACK (no device or bus error)
+;----------------------------------------------------------------------
+_LCD_I2C_WriteByte:
+    movwf lcd_i2c_sr, c ; shift register ← W
+    movlw 8
+    movwf lcd_i2c_bits, c ; 8 bits to send
+_lcd_wb_loop:
+    BANKSEL LATC
+    bcf ((LATC) and 0FFh), 3, 1 ; SCL LOW — set up SDA
+    btfss lcd_i2c_sr, 7, c
+    bcf ((LATC) and 0FFh), 4, 1 ; MSB = 0 → SDA LOW
+    btfsc lcd_i2c_sr, 7, c
+    bsf ((LATC) and 0FFh), 4, 1 ; MSB = 1 → SDA HIGH
+    rlncf lcd_i2c_sr, f, c ; shift: next bit → bit 7
+    call _LCD_I2C_HalfPeriod
+    BANKSEL LATC
+    bsf ((LATC) and 0FFh), 3, 1 ; SCL HIGH — slave samples
+    call _LCD_I2C_HalfPeriod
+    decfsz lcd_i2c_bits, f, c
+    bra _lcd_wb_loop
+    ; 9th clock: release SDA, pulse SCL, read ACK
+    BANKSEL LATC
+    bcf ((LATC) and 0FFh), 3, 1 ; SCL LOW
+    bsf ((LATC) and 0FFh), 4, 1 ; release SDA → pull-up → slave may pull LOW
+    call _LCD_I2C_HalfPeriod
+    bsf ((LATC) and 0FFh), 3, 1 ; SCL HIGH
+    call _LCD_I2C_HalfPeriod
+    ; Sample SDA (PORTC shares bank 4 with LATC — no extra BANKSEL needed)
+    btfss ((PORTC) and 0FFh), 4, 1 ; SDA = 1 → NACK → skip clrf
+    clrf lcd_ack, c ; SDA = 0 → ACK
+    btfsc ((PORTC) and 0FFh), 4, 1 ; SDA = 0 → ACK → skip movlw/movwf
+    movlw 1
+    btfsc ((PORTC) and 0FFh), 4, 1
+    movwf lcd_ack, c ; SDA = 1 → NACK = 1
+    bcf ((LATC) and 0FFh), 3, 1 ; SCL LOW
+    call _LCD_I2C_HalfPeriod
+    return
+
+;======================================================================
+; PCF8574 + HD44780 LAYER
+; Translated directly from I2C_LCD.c — function names match 1:1.
+;======================================================================
+
+;----------------------------------------------------------------------
+; _LCD_IO_Write ≡ IO_Expander_Write(Data)
+;
+; W = data byte to write.
+; Sends: START + lcd_addr + (W | lcd_bl) + STOP
+; BL is always OR'd in so the backlight never glitches off mid-init.
+;
+; Scratch: lcd_io_byte (level 1 — not touched by anything above)
+;----------------------------------------------------------------------
+_LCD_IO_Write:
+    movwf lcd_io_byte, c ; save data — _LCD_I2C_WriteByte will overwrite W
+    call _LCD_I2C_Start
+    movf lcd_addr, w, c
+    call _LCD_I2C_WriteByte ; send address byte
+    movf lcd_io_byte, w, c ; reload data
+    iorwf lcd_bl, w, c ; W = data | lcd_bl (BackLight_State always on)
+    call _LCD_I2C_WriteByte ; send data byte
+    call _LCD_I2C_Stop
+    return
+
+;----------------------------------------------------------------------
+; _LCD_Write4Bit ≡ write4bits(value) from LiquidCrystal_I2C.cpp
+;
+; W = nibble byte with data in bits 7:4, E=0.
+; ORs in lcd_rs (0x00 or 0x01).
+;
+; Sequence (THREE I2C transactions — matches Arduino library exactly):
+; 1. _LCD_IO_Write( W ) — data setup, E=0 (expanderWrite)
+; 2. _LCD_IO_Write( W | E ) — E rising edge (pulseEnable E=1)
+; 3. _LCD_IO_Write( W & ~E ) — E falling edge (pulseEnable E=0)
+; 4. 1 ms settle (HD44780 needs >37 µs; 1 ms is generous)
+;
+; The setup write (step 1) ensures data is stable on D7:D4 BEFORE E
+; rises — this is required by the HD44780 tDSU spec (40 ns min).
+; Each I2C transaction takes ~300 µs at 100 kHz, far exceeding any
+; timing requirement.
+;
+; Scratch: lcd_nib_byte (level 2 — not touched by _LCD_IO_Write)
+;----------------------------------------------------------------------
+_LCD_Write4Bit:
+    movwf lcd_nib_byte, c ; save nibble
+    movf lcd_rs, w, c
+    iorwf lcd_nib_byte, f, c ; nibble |= RS (0x00 or 0x01)
+    ; --- step 1: data setup E=0 ---
+    movf lcd_nib_byte, w, c
+    call _LCD_IO_Write ; expanderWrite(value)
+    ; --- step 2: E = 1 ---
+    movf lcd_nib_byte, w, c
+    iorlw 0x04 ; P2 enable ; | 0x04
+    call _LCD_IO_Write ; expanderWrite(value | En)
+    ; --- step 3: E = 0 (HD44780 latches data on this falling edge) ---
+    movf lcd_nib_byte, w, c
+    andlw 0xFB ; & ~0x04
+    call _LCD_IO_Write ; expanderWrite(value & ~En)
+    ; --- step 4: settle delay ---
+    movlw 1
+    call waitMilliSeconds
+    return
+
+;----------------------------------------------------------------------
+; _LCD_SendCmd ≡ LCD_CMD(CMD)
+;
+; W = 8-bit HD44780 command. RS = 0 (command register).
+; Sends upper nibble (bits 7:4) then lower nibble (bits 3:0),
+; each with an E pulse via _LCD_Write4Bit.
+;
+; *** Also called directly by main.asm (LCD_RefreshDisplay) ***
+;
+; Nibble construction (data in PCF bits 7:4):
+; upper: CMD & 0xF0 → bits 7:4 of CMD into PCF bits 7:4
+; lower: swapf(CMD) & 0xF0 → bits 3:0 of CMD into PCF bits 7:4
+; (same as (CMD << 4) & 0xF0 in C)
+;
+; Scratch: lcd_cmd_byte (level 3 — not touched by _LCD_Write4Bit)
+;----------------------------------------------------------------------
+_LCD_SendCmd:
+    movwf lcd_cmd_byte, c
+    clrf lcd_rs, c ; RS = 0 (command)
+    ; upper nibble
+    movf lcd_cmd_byte, w, c
+    andlw 0xF0
+    call _LCD_Write4Bit
+    ; lower nibble
+    swapf lcd_cmd_byte, w, c ; swap: original bits 3:0 → position 7:4
+    andlw 0xF0
+    call _LCD_Write4Bit
+    return
+
+;======================================================================
+; PUBLIC FUNCTIONS
+;======================================================================
+
+;----------------------------------------------------------------------
+; LCD_I2C_Scan
+;
+; Probe PCF8574 (write addresses 0x40–0x4E, 7-bit 0x20–0x27) and
+; PCF8574A (write addresses 0x70–0x7E, 7-bit 0x38–0x3F).
+; Sets lcd_addr to the first address that ACKs.
+; If no device found: lcd_addr = 0, lcd_ack = 1.
+; Call once before LCD_Init.
+;----------------------------------------------------------------------
+LCD_I2C_Scan:
+    movlw 0x40 ; start of PCF8574 range
+    movwf lcd_addr, c
+_lcd_scan_try:
+    call _LCD_I2C_Start
+    movf lcd_addr, w, c
+    call _LCD_I2C_WriteByte ; result → lcd_ack
+    call _LCD_I2C_Stop
+    tstfsz lcd_ack, c ; skip if ACK (lcd_ack = 0)
+    bra _lcd_scan_next
+    return ; ACK → lcd_addr is valid
+_lcd_scan_next:
+    movlw 2
+    addwf lcd_addr, f, c ; +2 in 8-bit space = +1 in 7-bit
+    movlw 0x50 ; end of PCF8574 range
+    cpfseq lcd_addr, c
+    bra _lcd_scan_cont
+    movlw 0x70 ; jump to PCF8574A range
+    movwf lcd_addr, c
+    bra _lcd_scan_try
+_lcd_scan_cont:
+    movlw 0x80 ; end of PCF8574A range
+    cpfseq lcd_addr, c
+    bra _lcd_scan_try
+    clrf lcd_addr, c ; nothing found
+    return
+
+;----------------------------------------------------------------------
+; LCD_Init ≡ LCD_Init(I2C_Add) from I2C_LCD.c
+;
+; lcd_addr must be set (call LCD_I2C_Scan first).
+; Matches the working C init sequence byte-for-byte.
+;----------------------------------------------------------------------
+LCD_Init:
+    movlw 0x08 ; P3 backlight
+    movwf lcd_bl, c ; backlight on (lcd_bl = 0x08)
+    ; IO_Expander_Write(0x00) → sends 0x00 | 0x08 = 0x08 (just BL, all else 0)
+    movlw 0x00
+    call _LCD_IO_Write
+    movlw 30
+    call waitMilliSeconds ; >30 ms power-on wait
+
+    ; HD44780 8-bit reset preamble:
+    ; LCD_CMD(0x03) sends two nibbles: upper=0x00 then lower=0x30
+    ; The 0x30 nibble (DB5,DB4=1) = Function Set 8-bit mode preamble
+    movlw 0x03
+    call _LCD_SendCmd
+    movlw 5
+    call waitMilliSeconds ; >4.1 ms
+    movlw 0x03
+    call _LCD_SendCmd
+    movlw 5
+    call waitMilliSeconds
+    movlw 0x03
+    call _LCD_SendCmd
+    movlw 5
+    call waitMilliSeconds
+
+    ; Switch to 4-bit mode (LCD_RETURN_HOME = 0x02):
+    ; LCD_CMD(0x02) sends upper=0x00 then lower=0x20 (DB5=1 = 4-bit mode)
+    movlw 0x02
+    call _LCD_SendCmd
+    movlw 5
+    call waitMilliSeconds
+
+    ; From here: HD44780 is in 4-bit mode, all commands are two nibbles.
+
+    movlw 0x28 ; Function Set: 4-bit bus, 2 lines, 5x8 font
+    call _LCD_SendCmd
+    movlw 50
+    call waitMilliSeconds
+
+    movlw 0x0C ; Display ON, cursor OFF, blink OFF
+    call _LCD_SendCmd
+    movlw 50
+    call waitMilliSeconds
+
+    movlw 0x01 ; Clear Display
+    call _LCD_SendCmd
+    movlw 50
+    call waitMilliSeconds
+
+    movlw 0x06 ; Entry Mode: cursor right, no display shift
+    call _LCD_SendCmd
+    movlw 50
+    call waitMilliSeconds
+
+    return
+
+;----------------------------------------------------------------------
+; LCD_Clear — clear display and return cursor to line 1 col 1
+;----------------------------------------------------------------------
+LCD_Clear:
+    movlw 0x01
+    call _LCD_SendCmd
+    movlw 3
+    call waitMilliSeconds ; Clear needs >1.52 ms
+    movlw 0x80 ; DDRAM address 0x00
+    call _LCD_SendCmd
+    return
+
+;----------------------------------------------------------------------
+; LCD_GotoLine1 — cursor to line 1, column 1 (DDRAM 0x00)
+;----------------------------------------------------------------------
+LCD_GotoLine1:
+    movlw 0x80
+    call _LCD_SendCmd
+    return
+
+;----------------------------------------------------------------------
+; LCD_GotoLine2 — cursor to line 2, column 1 (DDRAM 0x40)
+;----------------------------------------------------------------------
+LCD_GotoLine2:
+    movlw 0xC0
+    call _LCD_SendCmd
+    return
+
+;----------------------------------------------------------------------
+; LCD_SendChar ≡ LCD_Write_Char(Data)
+;
+; W = ASCII character to display.
+; RS = 1 (data register). Same nibble split as _LCD_SendCmd.
+;----------------------------------------------------------------------
+LCD_SendChar:
+    movwf lcd_cmd_byte, c
+    movlw 0x01 ; P0 RS
+    movwf lcd_rs, c ; RS = 1 (data)
+    ; upper nibble
+    movf lcd_cmd_byte, w, c
+    andlw 0xF0
+    call _LCD_Write4Bit
+    ; lower nibble
+    swapf lcd_cmd_byte, w, c
+    andlw 0xF0
+    call _LCD_Write4Bit
+    return
+
+;----------------------------------------------------------------------
+; LCD_SendDec — display W (0-255) as right-justified 3-char decimal
+; Examples: 5 → "  5" 42 → " 42" 255 → "255"
+;----------------------------------------------------------------------
+LCD_SendDec:
+    movwf lcd_tampon, c
+    clrf lcd_flag, c ; 0 = no non-zero digit printed yet
+    ; --- hundreds ---
+    clrf lcd_n_bit, c
+_lcd_h_sub:
+    movlw 100
+    subwf lcd_tampon, w, c
+    bnc _lcd_h_done
+    movwf lcd_tampon, c
+    incf lcd_n_bit, f, c
+    bra _lcd_h_sub
+_lcd_h_done:
+    movf lcd_n_bit, w, c
+    movwf lcd_flag, c
+    bz _lcd_h_sp
+    addlw '0'
+    call LCD_SendChar
+    bra _lcd_t_start
+_lcd_h_sp:
+    movlw ' '
+    call LCD_SendChar
+    ; --- tens ---
+_lcd_t_start:
+    clrf lcd_n_bit, c
+_lcd_t_sub:
+    movlw 10
+    subwf lcd_tampon, w, c
+    bnc _lcd_t_done
+    movwf lcd_tampon, c
+    incf lcd_n_bit, f, c
+    bra _lcd_t_sub
+_lcd_t_done:
+    movf lcd_n_bit, w, c
+    bnz _lcd_t_send
+    tstfsz lcd_flag, c
+    bra _lcd_t_zero
+    movlw ' '
+    call LCD_SendChar
+    bra _lcd_u
+_lcd_t_zero:
+    movlw '0'
+    call LCD_SendChar
+    bra _lcd_u
+_lcd_t_send:
+    addlw '0'
+    call LCD_SendChar
+    ; --- units ---
+_lcd_u:
+    movf lcd_tampon, w, c
+    addlw '0'
+    call LCD_SendChar
+    return
+
+;----------------------------------------------------------------------
+; LCD_WriteString — FSR0 points to a null-terminated string in RAM
+;----------------------------------------------------------------------
+LCD_WriteString:
+    movf POSTINC0, w
+    bz _lcd_ws_done
+    call LCD_SendChar
+    bra LCD_WriteString
+_lcd_ws_done:
+    return
+# 61 "main.asm" 2
 
 ; ---- Main variables (edge detection) ----
 ; btn_prev tracks the last-seen db_stable value so the main loop can
@@ -48591,6 +49262,9 @@ Debounce_Init:
 PSECT udata_acs
 btn_prev: DS 1 ; db_stable value from previous loop iteration
 btn_edge: DS 1 ; scratch: bits that just transitioned released->pressed
+main_ctr: DS 1 ; free-running loop counter (0-255, wraps), never touched by ISR
+hall_snap_l: DS 1 ; atomic snapshot of hall_count_l (taken with ((INTCON0) and 0FFh), 7, a=0)
+hall_snap_h: DS 1 ; atomic snapshot of hall_count_h (taken with ((INTCON0) and 0FFh), 7, a=0)
 
 ; ---- Main Code ----
 PSECT code
@@ -48623,11 +49297,69 @@ start:
     movf db_stable, w, c
     movwf btn_prev, c
     call Servo_Init
+    call Hall_Init
+    call LCD_I2C_Scan ; find PCF8574 address, sets lcd_i2c_addr
+    ; --- Scan result feedback on ((PORTD) and 0FFh), 0, a ---
+    ; lcd_ack=0 (found): 3 fast blinks then continue
+    ; lcd_ack=1 (not found): rapid continuous blink = wiring problem
+    tstfsz lcd_ack, c
+    bra _scan_fail
+    ; Found: 3 fast blinks
+    movlw 3
+    movwf btn_prev, c ; reuse btn_prev as blink counter (seeded below anyway)
+_scan_ok_blink:
+    BANKSEL LATD
+    bsf ((LATD) and 0FFh), 0, 1
+    movlw 80
+    call waitMilliSeconds
+    BANKSEL LATD
+    bcf ((LATD) and 0FFh), 0, 1
+    movlw 80
+    call waitMilliSeconds
+    decfsz btn_prev, f, c
+    bra _scan_ok_blink
+    bra _scan_done
+_scan_fail:
+    BANKSEL LATD
+    btg ((LATD) and 0FFh), 0, 1 ; toggle LED rapidly = no device found
+    movlw 120
+    call waitMilliSeconds
+    bra _scan_fail ; loops forever: fix wiring before proceeding
+_scan_done:
+    movf db_stable, w, c ; re-seed btn_prev (was used as blink counter)
+    movwf btn_prev, c
+    call LCD_Init
+    ; Hello World test — confirms LCD wiring and init are correct
+    call LCD_GotoLine1
+    movlw 'H'
+    call LCD_SendChar
+    movlw 'e'
+    call LCD_SendChar
+    movlw 'l'
+    call LCD_SendChar
+    movlw 'l'
+    call LCD_SendChar
+    movlw 'o'
+    call LCD_SendChar
+    call LCD_GotoLine2
+    movlw 'W'
+    call LCD_SendChar
+    movlw 'o'
+    call LCD_SendChar
+    movlw 'r'
+    call LCD_SendChar
+    movlw 'l'
+    call LCD_SendChar
+    movlw 'd'
+    call LCD_SendChar
+    movlw '!'
+    call LCD_SendChar
     BANKSEL INTCON0
     bsf ((INTCON0) and 0FFh), 6, 1 ; ((INTCON0) and 0FFh), 6, a = 1 (low-priority interrupts)
     bsf ((INTCON0) and 0FFh), 7, 1 ; ((INTCON0) and 0FFh), 7, a/((INTCON0) and 0FFh), 7, a = 1 (high-priority)
     movlw 100
     call waitMilliSeconds
+    clrf main_ctr, c ; initialise loop counter after interrupts live
 
     ; ==========================================================
     ; MAIN LOOP
@@ -48660,8 +49392,10 @@ mainLoop:
     btfss btn_edge, 1, c ; skip if button 2 not just pressed
     call handleButton2
 
-    ; --- Delay ~20ms (debounce ISR fires at 10ms; poll at 20ms is fine) ---
-    movlw 20
+    ; --- Increment loop counter then refresh LCD ---
+    incf main_ctr, f, c ; wraps 255→0, no ISR conflict
+    call LCD_RefreshDisplay
+    movlw 200
     call waitMilliSeconds
 
     goto mainLoop
@@ -48679,6 +49413,74 @@ handleButton2:
     call Servo_DecPos ; decrease angle
     BANKSEL LATD
     bcf ((LATD) and 0FFh), 0, 1 ; LED OFF = moving left
+    return
+
+; ------------------------------------------------------------------
+; LCD_RefreshDisplay
+; Full redraw of both lines every call — no stale chars possible.
+;
+; Line 1: "HallH: XXX" — hall_count_h, high byte of captured hall count.
+; Line 2: "HallL: XXX" — hall_count_l, low byte of captured hall count.
+;
+; Atomicity: hall_count_h:hall_count_l is a 2-byte value updated by the
+; ((SMT1TMRL) and 0FFh), 0, b ISR in two separate instructions. A torn read is possible if an
+; interrupt fires between the two movf instructions.
+; Fix: disable ((INTCON0) and 0FFh), 7, a for exactly 4 instructions (~250 ns @ 64 MHz) while
+; copying both bytes into local snapshots hall_snap_h:hall_snap_l, then
+; re-enable and display from the snapshots. Servo and debounce ISRs
+; are delayed at most one timer tick — harmless.
+; ------------------------------------------------------------------
+LCD_RefreshDisplay:
+    ; Atomic 2-byte snapshot of hall_count_h:hall_count_l.
+    ; ((INTCON0) and 0FFh), 7, a=0 window = 4 instructions ~250ns @ 64MHz.
+    ; Servo and debounce ISRs delayed at most one tick — harmless.
+    BANKSEL INTCON0
+    bcf ((INTCON0) and 0FFh), 7, 1 ; ((INTCON0) and 0FFh), 7, a=0 — mask all interrupts
+    movf hall_count_l, w, c
+    movwf hall_snap_l, c
+    movf hall_count_h, w, c
+    movwf hall_snap_h, c
+    bsf ((INTCON0) and 0FFh), 7, 1 ; ((INTCON0) and 0FFh), 7, a=1 — re-enable
+
+    ; --- Line 1: "HallH: XXX" ---
+    movlw 0x80 ; DDRAM addr 0x00 -> line 1, col 1
+    call _LCD_SendCmd
+    movlw 'H'
+    call LCD_SendChar
+    movlw 'a'
+    call LCD_SendChar
+    movlw 'l'
+    call LCD_SendChar
+    movlw 'l'
+    call LCD_SendChar
+    movlw 'H'
+    call LCD_SendChar
+    movlw ':'
+    call LCD_SendChar
+    movlw ' '
+    call LCD_SendChar
+    movf hall_snap_h, w, c
+    call LCD_SendDec
+
+    ; --- Line 2: "HallL: XXX" ---
+    movlw 0xC0 ; DDRAM addr 0x40 -> line 2, col 1
+    call _LCD_SendCmd
+    movlw 'H'
+    call LCD_SendChar
+    movlw 'a'
+    call LCD_SendChar
+    movlw 'l'
+    call LCD_SendChar
+    movlw 'l'
+    call LCD_SendChar
+    movlw 'L'
+    call LCD_SendChar
+    movlw ':'
+    call LCD_SendChar
+    movlw ' '
+    call LCD_SendChar
+    movf hall_snap_l, w, c
+    call LCD_SendDec
     return
 
     END resetVec
