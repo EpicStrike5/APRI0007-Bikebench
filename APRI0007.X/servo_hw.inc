@@ -26,7 +26,7 @@
 #define SERVO_DEBUG 1
 
 ; ---- Configuration ----
-SERVO_PIN           equ 2           ; RC2 bit in LATC
+SERVO_PIN           equ 5           ; RB5 bit in LATB
 SERVO_STEP          equ 20          ; position increment per button press
 SERVO_DEFAULT       equ 128         ; starting position
 SERVO_PRELOAD_BASE  equ 60536       ; TMR1 preload at pos=0  (200 Hz)
@@ -55,9 +55,9 @@ Servo_ISR:
     btg     BANKMASK(LATD), 2, 1        ; toggle RD2 (ISR heartbeat LED)
 #endif
 
-    ; Toggle RC2 - generates 50% duty cycle at current frequency
-    BANKSEL LATC
-    btg     BANKMASK(LATC), SERVO_PIN, 1
+    ; Toggle RB5 - generates 50% duty cycle at current frequency
+    BANKSEL LATB
+    btg     BANKMASK(LATB), SERVO_PIN, 1
 
     ; Reload TMR1 (write TMR1L first, then TMR1H - required for RD16=1)
     BANKSEL TMR1L
@@ -85,20 +85,23 @@ PSECT code
 Servo_Init:
 
 #if SERVO_DEBUG
-    ; Blocking pin test: two 250ms HIGH pulses on RC2.
+    ; Blocking pin test: two 250ms HIGH pulses on RB5.
     ; Visible on scope before any interrupts start.
     ; If HIGH appears: pin, wiring, and probe are correct.
-    BANKSEL LATC
-    bsf     BANKMASK(LATC), SERVO_PIN, 1    ; RC2 HIGH
+    BANKSEL LATB
+    bsf     BANKMASK(LATB), SERVO_PIN, 1    ; RB5 HIGH
     movlw   250
     call    waitMilliSeconds
-    bcf     BANKMASK(LATC), SERVO_PIN, 1    ; RC2 LOW
+    BANKSEL LATB
+    bcf     BANKMASK(LATB), SERVO_PIN, 1    ; RB5 LOW
     movlw   250
     call    waitMilliSeconds
-    bsf     BANKMASK(LATC), SERVO_PIN, 1    ; RC2 HIGH
+    BANKSEL LATB
+    bsf     BANKMASK(LATB), SERVO_PIN, 1    ; RB5 HIGH
     movlw   250
     call    waitMilliSeconds
-    bcf     BANKMASK(LATC), SERVO_PIN, 1    ; RC2 LOW
+    BANKSEL LATB
+    bcf     BANKMASK(LATB), SERVO_PIN, 1    ; RB5 LOW
     movlw   250
     call    waitMilliSeconds
 #endif

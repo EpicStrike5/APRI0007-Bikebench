@@ -138,12 +138,14 @@ PinConfig_Init:
     ;    Only enable on button pins (RB0, RB1).  All others off.
     ; ==================================================================
     ; WPUA is in the same bank as ANSELA (bank 4) - no BANKSEL needed
-    clrf    BANKMASK(WPUA), 1           ; PORTA no pull-ups
+    movlw   0x1D			; bits 0,2,3,4 = RB0,RB2, RB3, RB4 buttons only
+    movwf   BANKMASK(WPUA), 1           ;
     movlw   0x03                        ; bits 0,1 = RB0,RB1 buttons only
-    movwf   BANKMASK(WPUB), 1           ; PORTB pull-ups on buttons only
-    clrf    BANKMASK(WPUC), 1           ; PORTC no pull-ups (servo RC2)
+    movwf   BANKMASK(WPUB), 1
+    clrf    BANKMASK(WPUC), 1           ; PORTC no pull-ups
     clrf    BANKMASK(WPUD), 1           ; PORTD no pull-ups (LEDs)
-    clrf    BANKMASK(WPUE), 1           ; PORTE no pull-ups
+    movlw   0x01			; bits 1 = RB1 button only
+    movwf    BANKMASK(WPUE), 1           ; PORTE no pull-ups
     ; To re-enable all pull-ups, replace clrf with 0xFF movwf
     ; and change WPUB line back to 0xFF.
 
@@ -167,9 +169,9 @@ PinConfig_Init:
     ; TRIS registers also in bank 4 - no BANKSEL needed
     movlw   0xFF                        ; PORTA all inputs (RA0-RA3 freed from parallel LCD)
     movwf   BANKMASK(TRISA), 1
-    movlw   0xFF                        ; PORTB all inputs (RB0,RB1 buttons; RB2 Hall INT2)
+    movlw   0xEF                        ; PORTB all inputs (RB0,RB1 buttons; RB2 Hall INT2; RB5: PWM output)
     movwf   BANKMASK(TRISB), 1
-    movlw   0xE3                        ; bits 2,3,4 clear = RC2 (servo), RC3 (SCL), RC4 (SDA)
+    movlw   0xE3                        ; bits 2,3,4 clear = RC2 (servo, LCD mainentant), RC3 (SCL), RC4 (SDA)
     movwf   BANKMASK(TRISC), 1          ; 0xE3 = 0b11100011
     movlw   0xF0                        ; bits 0-3 clear = RD0-RD3 LED/debug outputs
     movwf   BANKMASK(TRISD), 1          ; RD4,RD5 freed (parallel LCD no longer used)

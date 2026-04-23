@@ -31,7 +31,8 @@
 ;======================================================================
 
 ; ---- Button pin mask ----
-DB_BTN_MASK     equ 0x03            ; bits 0-1 = RB0, RB1
+DB_BTN_MASK_B     equ 0x03            ; bits 0-1 = RB0, RB1
+DB_BTN_MASK_A     equ 0x1D
 
 ; ---- Timer2 register values ----
 ; T2CON:  ON=1, CKPS=111 (1:128), OUTPS=1001 (1:10)
@@ -54,6 +55,10 @@ db_stable:      DS 1                ; debounced button state (read this)
 db_prev:        DS 1                ; previous raw sample
 db_count:       DS 1                ; consecutive-match counter
 
+db_stable_A:      DS 1                ; debounced button state (read this)
+db_prev_A:        DS 1                ; previous raw sample
+db_count_A:       DS 1                ; consecutive-match counter
+
 ; ---- ISR Code (4-byte aligned for IVT address lookup) ----
 PSECT isrDebounce, class=CODE, reloc=4
 
@@ -73,7 +78,11 @@ Debounce_ISR:
     ; Sample button pins (RB0, RB1) from PORTB
     BANKSEL PORTB
     movf    BANKMASK(PORTB), 0, 1       ; W = PORTB
-    andlw   DB_BTN_MASK                  ; mask to button bits only
+    andlw   DB_BTN_MASK_B               ; mask to button bits only
+    
+    BANKSEL PORTA
+    movf    BANKMASK(PORTA), 0, 1       ; W = PORTB
+    andlw   DB_BTN_MASK_B               ; mask to button bits only
 
     ; Compare with previous sample
     xorwf   db_prev, w, c               ; W = current XOR previous
@@ -82,7 +91,7 @@ Debounce_ISR:
     ; --- Samples differ: restart counting ---
     BANKSEL PORTB
     movf    BANKMASK(PORTB), 0, 1       ; re-read PORTB
-    andlw   DB_BTN_MASK
+    andlw   DB_BTN_MASK_B
     movwf   db_prev, c                  ; save new sample
     clrf    db_count, c                 ; reset counter
     retfie  1
@@ -127,7 +136,7 @@ Debounce_Init:
     ; Read current button state as initial stable value
     BANKSEL PORTB
     movf    BANKMASK(PORTB), 0, 1
-    andlw   DB_BTN_MASK
+    andlw   DB_BTN_MASK_B
     movwf   db_stable, c
     movwf   db_prev, c
     movlw   DB_THRESHOLD

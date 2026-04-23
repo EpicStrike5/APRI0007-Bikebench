@@ -3,14 +3,13 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/hall.inc</file>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/pinconfig.inc</file>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/wait.inc</file>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/servo_hw.inc</file>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/main.asm</file>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/debounce.inc</file>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/lcd.inc</file>
-            <file>file:/C:/Users/Thomas/MPLABXProjects/APRI0007.X/can_torque.inc</file>
+            <file>file:/C:/Users/schum/Documents/Uni/PI/APRI0007-Bikebench/APRI0007.X/servo_hw.inc</file>
+            <file>file:/C:/Users/schum/Documents/Uni/PI/APRI0007-Bikebench/APRI0007.X/main.asm</file>
+            <file>file:/C:/Users/schum/Documents/Uni/PI/APRI0007-Bikebench/APRI0007.X/can_torque.inc</file>
+            <file>file:/C:/Users/schum/Documents/Uni/PI/APRI0007-Bikebench/APRI0007.X/Control.inc</file>
+            <file>file:/C:/Users/schum/Documents/Uni/PI/APRI0007-Bikebench/APRI0007.X/hall.inc</file>
+            <file>file:/C:/Users/schum/Documents/Uni/PI/APRI0007-Bikebench/APRI0007.X/debounce.inc</file>
+            <file>file:/C:/Users/schum/Documents/Uni/PI/APRI0007-Bikebench/APRI0007.X/pinconfig.inc</file>
         </group>
     </open-files>
 </project-private>
