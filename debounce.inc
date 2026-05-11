@@ -14,6 +14,7 @@
 ;   bit 3 = RA2
 ;   bit 4 = RA3
 ;   bit 5 = RA4
+;   bit 6 = RE1
 ;
 ; Timer2 configuration:
 ;   Clock:     Fosc/4 = 16 MHz
@@ -26,7 +27,8 @@
 ;                      (pin config done externally by pinconfig.inc)
 ;   db_stable        - debounced button state (read from access bank)
 ;                      bit 0 = RB0, bit 1 = RB1, bit 2 = RA0,
-;                      bit 3 = RA2, bit 4 = RA3, bit 5 = RA4
+;                      bit 3 = RA2, bit 4 = RA3, bit 5 = RA4,
+;                      bit 6 = RE1
 ;                      (0 = pressed, 1 = released, matching active-LOW)
 ;
 ; Usage: #include "debounce.inc" from main.asm
@@ -39,6 +41,7 @@
 DB_BTN_MASK_B   equ 0x03            ; PORTB bits 0-1 = RB0, RB1
 DB_BTN_MASK_A0  equ 0x01            ; PORTA bit 0 = RA0
 DB_BTN_MASK_A24 equ 0x1C            ; PORTA bits 2-4 = RA2, RA3, RA4
+DB_BTN_MASK_E1  equ 0x02            ; PORTE bit 1 = RE1
 
 ; ---- Timer2 register values ----
 ; T2CON:  ON=1, CKPS=111 (1:128), OUTPS=1001 (1:10)
@@ -60,11 +63,12 @@ PSECT udata_acs
 db_stable:      DS 1                ; debounced button state (read this)
 db_prev:        DS 1                ; previous raw sample
 db_count:       DS 1                ; consecutive-match counter
-db_sample:      DS 1                ; packed raw sample from PORTA/PORTB
+db_sample:      DS 1                ; packed raw sample from PORTA/PORTB/PORTE
 db_temp:        DS 1                ; scratch for bit packing
 btn_prev:       DS 1                ; last debounced state seen by the main loop
 btn_edge:       DS 1                ; buttons that changed from released to pressed
 flag_auto:      DS 1                ; bit 0 = auto mode enabled
+flag_cadence_setting: DS 1          ; bit 0 = cadence target setting screen active
 
 ; ---- ISR Code (4-byte aligned for IVT address lookup) ----
 PSECT isrDebounce, class=CODE, reloc=4
@@ -127,7 +131,7 @@ PSECT code
 ; _db_read_sample
 ; Packs button levels into W and db_sample:
 ;   bit 0 = RB0, bit 1 = RB1, bit 2 = RA0,
-;   bit 3 = RA2, bit 4 = RA3, bit 5 = RA4
+;   bit 3 = RA2, bit 4 = RA3, bit 5 = RA4, bit 6 = RE1
 ;----------------------------------------------------------------------
 _db_read_sample:
     ; Read RB0/RB1 directly into bits 0-1
@@ -153,6 +157,24 @@ _db_read_sample:
     movf    BANKMASK(PORTA), 0, 1
     andlw   DB_BTN_MASK_A24
     movwf   db_temp, c
+    bcf     STATUS, 0, c
+    rlcf    db_temp, f, c
+    movf    db_temp, w, c
+    iorwf   db_sample, f, c
+
+    ; Move RE1 into bit 6
+    BANKSEL PORTE
+    movf    BANKMASK(PORTE), 0, 1
+    andlw   DB_BTN_MASK_E1
+    movwf   db_temp, c
+    bcf     STATUS, 0, c
+    rlcf    db_temp, f, c
+    bcf     STATUS, 0, c
+    rlcf    db_temp, f, c
+    bcf     STATUS, 0, c
+    rlcf    db_temp, f, c
+    bcf     STATUS, 0, c
+    rlcf    db_temp, f, c
     bcf     STATUS, 0, c
     rlcf    db_temp, f, c
     movf    db_temp, w, c
@@ -214,6 +236,7 @@ Buttons_Init:
     movf    db_stable, w, c
     movwf   btn_prev, c
     clrf    flag_auto, c
+    clrf    flag_cadence_setting, c
     BANKSEL LATA
     bcf     BANKMASK(LATA), 1, 1        ; RA1 LED OFF while manual mode is active
     return
@@ -243,15 +266,25 @@ Buttons_HandleMainLoop:
     btfsc   btn_edge, 3, c
     call    _buttons_handle_ra2
 
+    ; RA3 always toggles the cadence target setting mode.
+    btfsc   btn_edge, 4, c
+    call    _buttons_handle_ra3
+
+    ; While cadence target setting mode is active, RA4 increases the
+    ; target and RE1 decreases it. All other actions are paused so the
+    ; user can tune the value cleanly.
+    btfsc   flag_cadence_setting, 0, c
+    bra     _buttons_setting_mode
+
     ; Auto mode: skip manual actions and run the automatic gear logic.
     btfsc   flag_auto, 0, c
     bra     _buttons_auto_mode
 
-    btfsc   btn_edge, 4, c
-    call    _buttons_handle_ra3
-
     btfsc   btn_edge, 5, c
     call    _buttons_handle_ra4
+
+    btfsc   btn_edge, 6, c
+    call    _buttons_handle_re1
 
     ; Manual gear up/down are only allowed when the latest published
     ; hall value is nonzero.
@@ -265,6 +298,17 @@ Buttons_HandleMainLoop:
     call    _buttons_handle_rb1
 
 _buttons_manual_done:
+    movlw   20
+    call    waitMilliSeconds
+    return
+
+_buttons_setting_mode:
+    btfsc   btn_edge, 5, c
+    call    _buttons_handle_ra4
+
+    btfsc   btn_edge, 6, c
+    call    _buttons_handle_re1
+
     movlw   20
     call    waitMilliSeconds
     return
@@ -296,9 +340,34 @@ _buttons_handle_ra2:
     return
 
 _buttons_handle_ra3:
-    call    ledA5
+    btg     flag_cadence_setting, 0, c
     return
 
 _buttons_handle_ra4:
-    call    ledE0
+    movlw   CADENCE_TARGET_MAX
+    subwf   cadence_target_base, w, c
+    bc      _buttons_ra4_clamp
+    movlw   10
+    addwf   cadence_target_base, f, c
+    return
+
+_buttons_ra4_clamp:
+    movlw   CADENCE_TARGET_MAX
+    movwf   cadence_target_base, c
+
+_buttons_ra4_done:
+    return
+
+_buttons_handle_re1:
+    movlw   10
+    subwf   cadence_target_base, f, c
+    movlw   CADENCE_TARGET_MIN
+    subwf   cadence_target_base, w, c
+    bc      _buttons_re1_done
+
+_buttons_re1_clamp:
+    movlw   CADENCE_TARGET_MIN
+    movwf   cadence_target_base, c
+
+_buttons_re1_done:
     return

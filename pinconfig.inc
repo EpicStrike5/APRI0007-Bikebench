@@ -13,46 +13,46 @@
 ; ---------------------------------------------------------------
 ; Pin   Function                                 Dir   Analog  Pull-up  PPS
 ; ----  ---------------------------------------  ----  ------  -------  ----------------
-; RA0   Button / mode input                      in    no      YES      -
-; RA1   LED / general output                     out   no      no       -
-; RA2   Button / general input                   in    no      YES      -
-; RA3   Button / general input                   in    no      YES      -
-; RA4   Button / general input                   in    no      YES      -
+; RA0   Button / auto-manual mode                in    no      YES      -
+; RA1   Auto-mode LED                            out   no      no       -
+; RA2   Button / LCD screen toggle               in    no      YES      -
+; RA3   Button / user input                      in    no      YES      -
+; RA4   Button / user input                      in    no      YES      -
 ; RA5   LED / general output                     out   no      no       -
-; RA6   unused / LCD direct RS                   in/out no      YES      -
-; RA7   unused                                   in    no      YES      -
+; RA6   LCD direct RS                            out   no      no       -
+; RA7   LCD contrast test input                  in    no      YES      -
 ;
-; RB0   Button 1 (RIGHT) in   no      YES      -
-; RB1   Button 2 (LEFT)  in   no      YES      -
-; RB2   Hall input       in    no      YES      -
-; RB3   CANRX            in    no      no       CANRXPPS = 0x0B
-; RB4   CANTX            out   no      no       RB4PPS   = 0x46
-; RB5   Servo PWM        out   no      no       -
-; RB6   (unused)         in    no      YES      -
-; RB7   (unused)         in    no      YES      -
+; RB0   Button / manual harder gear              in    no      YES      -
+; RB1   Button / manual easier gear              in    no      YES      -
+; RB2   Hall sensor input                        in    no      YES      -
+; RB3   CANRX                                    in    no      no       CANRXPPS = 0x0B
+; RB4   CANTX                                    out   no      no       RB4PPS   = 0x46
+; RB5   Servo output                             out   no      no       -
+; RB6   Unused                                   in    no      YES      -
+; RB7   Unused                                   in    no      YES      -
 ;
-; RC0   unused / LCD direct RW                   in/out no      no       -
-; RC1   unused / LCD direct E                    in/out no      no       -
-; RC2   unused / LCD direct DB0                  in/out no      no       -
-; RC3   LCD I2C SCL / LCD direct DB1             in/out no      no       -
-; RC4   LCD I2C SDA / LCD direct DB7             in/out no      no       -
-; RC5   unused / LCD direct DB6                  in/out no      no       -
-; RC6   (unused)         in    no      YES      -
-; RC7   (unused)         in    no      YES      -
+; RC0   LCD direct RW                            out   no      no       -
+; RC1   LCD direct E                             out   no      no       -
+; RC2   LCD direct DB0                           out   no      no       -
+; RC3   LCD direct DB1                           out   no      no       -
+; RC4   LCD direct DB7                           out   no      no       -
+; RC5   LCD direct DB6                           out   no      no       -
+; RC6   Unused                                   in    no      YES      -
+; RC7   Unused                                   in    no      YES      -
 ;
-; RD0   unused / LCD direct DB2                  out   no      no       -
-; RD1   unused / LCD direct DB3                  out   no      no       -
-; RD2   unused / LCD direct BL-                  out   no      no       -
-; RD3   unused / LCD direct BL+                  out   no      no       -
-; RD4   (unused)         in    no      YES      -
-; RD5   (unused)         in    no      YES      -
-; RD6   unused / LCD direct DB5                  out   no      no       -
-; RD7   unused / LCD direct DB4                  out   no      no       -
+; RD0   LCD direct DB2                           out   no      no       -
+; RD1   LCD direct DB3                           out   no      no       -
+; RD2   LCD direct BL-                           out   no      no       -
+; RD3   LCD direct BL+                           out   no      no       -
+; RD4   Unused                                   in    no      YES      -
+; RD5   Unused                                   in    no      YES      -
+; RD6   LCD direct DB5                           out   no      no       -
+; RD7   LCD direct DB4                           out   no      no       -
 ;
-; RE0   LED / general output                     out   no      no       -
-; RE1   general output                           out   no      no       -
-; RE2   general output                           out   no      no       -
-; RE3   MCLR             in    -       -        - (config bit)
+; RE0   LED / startup indicator                  out   no      no       -
+; RE1   Button / user input                      in    no      YES      -
+; RE2   LED / general output                     out   no      no       -
+; RE3   MCLR                                     in    -       -        - (config bit)
 ;
 ; ---------------------------------------------------------------
 ; CAN BUS USED IN THIS PROJECT
@@ -143,7 +143,8 @@ PinConfig_Init:
     movwf   BANKMASK(WPUB), 1           ; no pull-up on RB3/RB4 CAN pins
     clrf    BANKMASK(WPUC), 1           ; PORTC no pull-ups
     clrf    BANKMASK(WPUD), 1           ; PORTD no pull-ups
-    clrf    BANKMASK(WPUE), 1           ; PORTE no pull-ups
+    movlw   0x02                        ; RE1 button pull-up
+    movwf   BANKMASK(WPUE), 1
 
     ; ==================================================================
     ; 3. OUTPUT LATCHES  (LATx : initial output state)
@@ -155,7 +156,7 @@ PinConfig_Init:
     clrf    BANKMASK(LATB), 1
     clrf    BANKMASK(LATC), 1         ; RC0..RC5 control/data start LOW
     clrf    BANKMASK(LATD), 1         ; RD0,RD1,RD6,RD7 data + RD2,RD3 BL
-    clrf    BANKMASK(LATE), 1
+    clrf    BANKMASK(LATE), 1          ; RE0/RE2 LEDs start LOW
 
     ; ==================================================================
     ; 4. DATA DIRECTION  (TRISx : 1=input, 0=output)
@@ -171,8 +172,8 @@ PinConfig_Init:
     movwf   BANKMASK(TRISC), 1        ; RC0..RC5 LCD outputs, RC6..RC7 inputs
     movlw   0x30
     movwf   BANKMASK(TRISD), 1        ; RD0,RD1,RD2,RD3,RD6,RD7 LCD outputs
-    movlw   0x00
-    movwf   BANKMASK(TRISE), 1
+    movlw   0x02
+    movwf   BANKMASK(TRISE), 1        ; RE1 button input, RE0/RE2 LED outputs
 
     ; ==================================================================
     ; 5. PPS - PERIPHERAL PIN SELECT  (bank 2: 0x200-0x26B)

@@ -74,8 +74,6 @@ lcd_digit:       DS 1           ; digit accumulator for LCD decimal helper
 lcd_started:     DS 1           ; leading-space suppression flag for 16-bit decimal
 lcd_div_l:       DS 1           ; current 16-bit decimal divisor low byte
 lcd_div_h:       DS 1           ; current 16-bit decimal divisor high byte
-lcd_tmp_l:       DS 1           ; LCD helper scratch low byte
-lcd_tmp_h:       DS 1           ; LCD helper scratch high byte
 
 ; ---- Main Code ----
 PSECT code
@@ -88,6 +86,11 @@ start:
     ; --- All pins: ANSEL, TRIS, LAT, WPU, PPS (one place) ---
     call    PinConfig_Init
     call    LCD_Init
+    call    Debounce_Init
+    call    Buttons_Init
+    call    Hall_Init
+    call    CAN_Init
+    call    CAN_Torque_Init
 
     ; --- Startup LCD banner before servo power/activity ---
     call    LCD_GotoLine1
@@ -148,11 +151,6 @@ start:
 
     ; Continue with the higher-current / motion-capable peripherals.
     call    Servo_Init
-    call    Debounce_Init
-    call    Buttons_Init
-    call    Hall_Init
-    call    CAN_Init
-    call    CAN_Torque_Init
     call    Control_Init
 
     ; Update the startup banner once the servo and the rest are active.
@@ -180,6 +178,9 @@ start:
     movlw   '!'
     call    LCD_SendChar
     
+    movlw   1
+    call    waitSeconds
+
     ; --- Startup LED blink: confirms the system reached full init ---
     call ledE0
     
@@ -236,7 +237,7 @@ ledA5:
 ; ------------------------------------------------------------------
 LCD_RefreshDisplay:
     incf    lcd_refresh_tick, f, c
-    movlw   50
+    movlw   20
     cpfseq  lcd_refresh_tick, c
     return
     clrf    lcd_refresh_tick, c
@@ -249,6 +250,9 @@ LCD_RefreshDisplay:
 ; Line 2: RPM[rpm]:value
 ; ------------------------------------------------------------------
 LCD_PrintTargetFrame:
+    btfsc   flag_cadence_setting, 0, c
+    bra     LCD_PrintCadenceSettingFrame
+
     movf    lcd_screen_mode, w, c
     bnz     LCD_PrintPowerFrame
 
@@ -301,6 +305,58 @@ LCD_PrintTargetFrame:
     call    LCD_SendChar
     return
 
+LCD_PrintCadenceSettingFrame:
+    call    LCD_GotoLine1
+    movlw   'S'
+    call    LCD_SendChar
+    movlw   'E'
+    call    LCD_SendChar
+    movlw   'T'
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   'C'
+    call    LCD_SendChar
+    movlw   'A'
+    call    LCD_SendChar
+    movlw   'D'
+    call    LCD_SendChar
+    movlw   'E'
+    call    LCD_SendChar
+    movlw   'N'
+    call    LCD_SendChar
+    movlw   'C'
+    call    LCD_SendChar
+    movlw   'E'
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+
+    call    LCD_GotoLine2
+    movlw   'T'
+    call    LCD_SendChar
+    movlw   'G'
+    call    LCD_SendChar
+    movlw   'T'
+    call    LCD_SendChar
+    movlw   ':'
+    call    LCD_SendChar
+    movf    cadence_target_base, w, c
+    call    LCD_SendDec
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   '['
+    call    LCD_SendChar
+    movlw   'r'
+    call    LCD_SendChar
+    movlw   'p'
+    call    LCD_SendChar
+    movlw   'm'
+    call    LCD_SendChar
+    movlw   ']'
+    call    LCD_SendChar
+    return
+
 LCD_PrintPowerFrame:
     call    LCD_GotoLine1
     movlw   'P'
@@ -338,101 +394,37 @@ LCD_PrintPowerFrame:
     call    LCD_SendChar
 
     call    LCD_GotoLine2
-    movlw   'R'
-    call    LCD_SendChar
-    movlw   'R'
+    movlw   'S'
     call    LCD_SendChar
     movlw   'P'
     call    LCD_SendChar
-    movlw   'M'
+    movlw   'D'
     call    LCD_SendChar
     movlw   ':'
     call    LCD_SendChar
-    call    LCD_LoadRearWheelRPM
+    movf    hall_speed_l, w, c
+    movwf   lcd_value_l, c
+    movf    hall_speed_h, w, c
+    movwf   lcd_value_h, c
     call    LCD_SendDec16
     movlw   ' '
     call    LCD_SendChar
     movlw   '['
     call    LCD_SendChar
-    movlw   'r'
-    call    LCD_SendChar
-    movlw   'p'
+    movlw   'k'
     call    LCD_SendChar
     movlw   'm'
     call    LCD_SendChar
-    return
-
-LCD_LoadRearWheelRPM:
-    ; hall_count_l is the pulse count measured over about 0.5 s.
-    ; With 9 equally spaced magnets on the rear wheel:
-    ;   rear_wheel_rpm = pulses * 60 / (9 * 0.5) = pulses * 40 / 3
-
-    ; Compute x32 into lcd_tmp_h:l.
-    movf    hall_count_l, w, c
-    movwf   lcd_tmp_l, c
-    clrf    lcd_tmp_h, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_tmp_l, f, c
-    rlcf    lcd_tmp_h, f, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_tmp_l, f, c
-    rlcf    lcd_tmp_h, f, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_tmp_l, f, c
-    rlcf    lcd_tmp_h, f, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_tmp_l, f, c
-    rlcf    lcd_tmp_h, f, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_tmp_l, f, c
-    rlcf    lcd_tmp_h, f, c
-
-    ; Compute x8 into lcd_value_h:l.
-    movf    hall_count_l, w, c
-    movwf   lcd_value_l, c
-    clrf    lcd_value_h, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_value_l, f, c
-    rlcf    lcd_value_h, f, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_value_l, f, c
-    rlcf    lcd_value_h, f, c
-    bcf     STATUS, 0, c
-    rlcf    lcd_value_l, f, c
-    rlcf    lcd_value_h, f, c
-
-    ; Add x32 + x8 = x40.
-    movf    lcd_tmp_l, w, c
-    addwf   lcd_value_l, f, c
-    movf    lcd_tmp_h, w, c
-    addwfc  lcd_value_h, f, c
-
-    ; Divide by 3 with repeated subtraction. Quotient goes into lcd_tmp_h:l.
-    clrf    lcd_tmp_l, c
-    clrf    lcd_tmp_h, c
-
-_lcd_rrpm_div_loop:
-    movf    lcd_value_h, w, c
-    bnz     _lcd_rrpm_do_sub
-    movlw   3
-    subwf   lcd_value_l, w, c
-    bnc     _lcd_rrpm_done
-
-_lcd_rrpm_do_sub:
-    movlw   3
-    subwf   lcd_value_l, f, c
-    movlw   0
-    subwfb  lcd_value_h, f, c
-    incfsz  lcd_tmp_l, f, c
-    bra     _lcd_rrpm_div_loop
-    incf    lcd_tmp_h, f, c
-    bra     _lcd_rrpm_div_loop
-
-_lcd_rrpm_done:
-    movf    lcd_tmp_l, w, c
-    movwf   lcd_value_l, c
-    movf    lcd_tmp_h, w, c
-    movwf   lcd_value_h, c
+    movlw   '/'
+    call    LCD_SendChar
+    movlw   'h'
+    call    LCD_SendChar
+    movlw   ']'
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
     return
 LCD_SendDec16:
     clrf    lcd_started, c

@@ -1,10 +1,28 @@
 TORQUE_MIN_ACTIVE             equ 1
 CADENCE_MIN_ACTIVE            equ 5
-CADENCE_TARGET_LOW            equ 40
-CADENCE_TARGET_HIGH           equ 80
-TORQUE_HIGH_LIMIT             equ 55
+TORQUE_HIGH_LIMIT             equ 90
 STABILITY_THRESHOLD           equ 5
+CADENCE_TARGET_MIN            equ 60
+CADENCE_TARGET_MAX            equ 120
+CADENCE_TARGET_DEFAULT        equ 70
+CADENCE_TARGET_HIGH_OFFSET    equ 20
+CADENCE_WINDOW_HALF           equ 30
 
+; Two-zone cadence strategy inspired by the cadence/power literature:
+; at higher rider power, target a higher cadence band.
+; The rider selects a base cadence target. The controller then uses:
+;   - low-power target  = base target
+;   - high-power target = base target + 20 rpm
+; Around that active target, the controller builds a symmetric window:
+;   - upshift   above target + 30 rpm
+;   - downshift below target - 30 rpm
+; Power-zone hysteresis:
+;   - enter the high-power cadence band at 300 W
+;   - return to the low-power cadence band at 200 W
+POWER_ZONE_ENTER_HIGH_L       equ low(300)
+POWER_ZONE_ENTER_HIGH_H       equ high(300)
+POWER_ZONE_EXIT_HIGH_L        equ low(200)
+POWER_ZONE_EXIT_HIGH_H        equ high(200)
 
 CONTROL_LOOP_PERIOD           equ 100
 POST_SHIFT_DELAY             equ 3
@@ -24,13 +42,23 @@ power_acc_u:                  DS 1
 power_tmp_l:                  DS 1
 power_tmp_h:                  DS 1
 power_tmp_u:                  DS 1
+power_zone_state:             DS 1    ; bit 0 = 1 when the high-power cadence band is active
+cadence_target_base:          DS 1    ; user-selected base cadence target in rpm
+cadence_target_active:        DS 1    ; active target after power-zone adjustment
+cadence_target_low:           DS 1    ; active downshift threshold = target - 35
+cadence_target_high:          DS 1    ; active upshift threshold = target + 35
 
 PSECT code
 
 ;----------------------------------------------------------------------
-; Reset controller state at startup 
+; Reset controller state at startup.
+; The cadence target starts from a default value and can later be
+; changed by the user from the button-driven setting screen.
 ;----------------------------------------------------------------------
 Control_Init:
+    clrf    power_zone_state, c
+    movlw   CADENCE_TARGET_DEFAULT
+    movwf   cadence_target_base, c
     call    ResetCounters
     return
  
@@ -96,9 +124,31 @@ _ComputePower_ShiftTmpLeft:
     rlcf    power_tmp_h, f, c
     rlcf    power_tmp_u, f, c
     return
+
+_Control_PrepareCadenceWindow:
+    ; Build the active cadence window from the active target:
+    ;   cadence_target_low  = target - window_half
+    ;   cadence_target_high = target + window_half
+    movf    cadence_target_active, w, c
+    movwf   cadence_target_low, c
+    movwf   cadence_target_high, c
+
+    movlw   CADENCE_WINDOW_HALF
+    subwf   cadence_target_low, f, c
+
+    movlw   CADENCE_WINDOW_HALF
+    addwf   cadence_target_high, f, c
+    return
     
 ;----------------------------------------------------------------------
-; GearShiftControl - Main state machine
+; GearShiftControl
+; Main automatic shifting state machine:
+;   1. Require valid pedaling activity.
+;   2. Estimate rider power.
+;   3. Select the low-power or high-power cadence target with hysteresis.
+;   4. Build the cadence window around that target.
+;   5. Shift up if cadence stays too high.
+;   6. Shift down if cadence stays too low or torque gets too high.
 ;----------------------------------------------------------------------
 GearShiftControl:
     ; Keep pedaling detection enabled. It is a simple, direct guard that
@@ -106,122 +156,145 @@ GearShiftControl:
     ; values when the rider is not actually pedaling.
     movlw   TORQUE_MIN_ACTIVE
     subwf   torque_nm, w, c
-    bc      _control_check_cadence
-    bra     _control_inactive
+    bc      _control_check_min_cadence
+    bra     _control_not_pedaling
 
-_control_check_cadence:
+_control_check_min_cadence:
     movlw   CADENCE_MIN_ACTIVE
     subwf   cadence, w, c
-    bc      pedaling_active
+    bc      _control_pedaling_active
 
-_control_inactive:
+_control_not_pedaling:
     call    ResetCounters
     bra     _control_loop_delay
 
-pedaling_active:
+_control_pedaling_active:
     call    ComputePower
-    
-    ; Cadence/torque split control:
-    ; cadence too high -> shift up (harder gear)
-    ; cadence too low  -> shift down (easier gear)
-    ; torque too high  -> shift down (easier gear)
-    movlw   CADENCE_TARGET_HIGH + 1
+
+    ; Update the active power zone with hysteresis.
+    ; The zone only switches up at 300 W and only switches back down
+    ; once power falls to 200 W or less.
+    btfsc   power_zone_state, 0, c
+    bra     _control_hold_high_power_zone
+
+    ; Currently in the low-power zone: only switch up if power >= 300 W.
+    movlw   POWER_ZONE_ENTER_HIGH_H
+    subwf   power_value_h, w, c
+    bz      _control_check_enter_high_l
+    bc      _control_use_high_power_zone
+    bra     _control_use_low_power_zone
+
+_control_check_enter_high_l:
+    movlw   POWER_ZONE_ENTER_HIGH_L
+    subwf   power_value_l, w, c
+    bc      _control_use_high_power_zone
+    bra     _control_use_low_power_zone
+
+_control_hold_high_power_zone:
+    ; Currently in the high-power zone: stay there until power <= 200 W.
+    movlw   POWER_ZONE_EXIT_HIGH_H
+    subwf   power_value_h, w, c
+    bz      _control_check_exit_high_l
+    bc      _control_use_high_power_zone
+    bra     _control_use_low_power_zone
+
+_control_check_exit_high_l:
+    movlw   POWER_ZONE_EXIT_HIGH_L
+    subwf   power_value_l, w, c
+    bc      _control_use_high_power_zone
+    bra     _control_use_low_power_zone
+
+_control_use_low_power_zone:
+    ; Low-power mode uses the user-selected base cadence target directly.
+    btfsc   power_zone_state, 0, c
+    call    _control_blink_power_zone_led
+    bcf     power_zone_state, 0, c
+    movf    cadence_target_base, w, c
+    movwf   cadence_target_active, c
+    call    _Control_PrepareCadenceWindow
+    bra     _control_check_cadence_high
+
+_control_use_high_power_zone:
+    ; High-power mode shifts the active target upward by 20 rpm.
+    btfss   power_zone_state, 0, c
+    call    _control_blink_power_zone_led
+    bsf     power_zone_state, 0, c
+    movf    cadence_target_base, w, c
+    addlw   CADENCE_TARGET_HIGH_OFFSET
+    movwf   cadence_target_active, c
+    call    _Control_PrepareCadenceWindow
+
+_control_check_cadence_high:
+    ; Above the active upper threshold, request the harder-gear side.
+    movf    cadence_target_high, w, c
+    addlw   1
     subwf   cadence, w, c
-    bc      _control_power_high_true
-    bra     _control_power_high_false
+    bc      _control_cadence_too_high
+    bra     _control_cadence_not_high
 
-_control_power_high_false:
+_control_blink_power_zone_led:
+    BANKSEL LATE
+    bsf     BANKMASK(LATE), 2, 1
+    movlw   100
+    call    waitMilliSeconds
+    bcf     BANKMASK(LATE), 2, 1
+    return
+
+_control_cadence_not_high:
     clrf    high_power_counter, c
-    bra     _control_power_low_check
+    bra     _control_check_cadence_low
 
-_control_power_high_true:
+_control_cadence_too_high:
     incf    high_power_counter, f, c
     clrf    low_power_counter, c
-    bra     _control_shift_up_check
+    bra     _control_check_upshift
 
-_control_power_low_check:
-    movlw   CADENCE_TARGET_LOW
+_control_check_cadence_low:
+    ; Below the active lower threshold, request the easier-gear side.
+    movf    cadence_target_low, w, c
     subwf   cadence, w, c
-    bnc     _control_power_low_true
-    bra     _control_torque_high_check
+    bnc     _control_downshift_condition_true
+    bra     _control_check_torque_high
 
-_control_torque_high_check:
+_control_check_torque_high:
+    ; High torque can also force the easier-gear side, even if cadence
+    ; has not yet dropped below the lower threshold.
     movlw   TORQUE_HIGH_LIMIT
     subwf   torque_nm, w, c
-    bc      _control_power_low_true
-    bra     _control_power_low_false
+    bc      _control_downshift_condition_true
+    bra     _control_downshift_condition_false
     
-_control_power_low_true:
+_control_downshift_condition_true:
     incf    low_power_counter, f, c
     clrf    high_power_counter, c
-    bra     _control_shift_down_check
+    bra     _control_check_downshift
     
-_control_power_low_false:
+_control_downshift_condition_false:
     clrf    low_power_counter, c
-    bra     _control_shift_down_check
-
-    ; ------------------------------------------------------------------
-    ; Power-only test mode:
-    ; HTLC / LTHC torque-cadence balance logic intentionally disabled.
-    ; Re-enable these blocks when you want to combine them with the power
-    ; controller again.
-    ; ------------------------------------------------------------------
-;_control_htlc_check:
-;    movlw   TORQUE_HIGH_LIMIT
-;    subwf   torque_nm, w, c
-;    bc      _control_htlc_check_cadence
-;    clrf    HighTorqueLowCadence, c
-;    bra     _control_lthc_check
-;
-;_control_htlc_check_cadence:
-;    movlw   CADENCE_LOW_LIMIT + 1
-;    subwf   cadence, w, c
-;    bnc     _control_htlc_true
-;    clrf    HighTorqueLowCadence, c
-;    bra     _control_lthc_check
-;
-;_control_htlc_true:
-;    incf    HighTorqueLowCadence, f, c
-;
-;_control_lthc_check:
-;    movlw   TORQUE_LOW_LIMIT + 1
-;    subwf   torque_nm, w, c
-;    bnc     _control_lthc_check_cadence
-;    clrf    LowTorqueHighCadence, c
-;    bra     _control_shift_down_check
-;
-;_control_lthc_check_cadence:
-;    movlw   CADENCE_HIGH_LIMIT
-;    subwf   cadence, w, c
-;    bc      _control_lthc_true
-;    clrf    LowTorqueHighCadence, c
-;    bra     _control_shift_down_check
-;
-;_control_lthc_true:
-;    incf    LowTorqueHighCadence, f, c
-
-_control_shift_down_check:
+    bra     _control_check_downshift
+    
+_control_check_downshift:
     ; Downshifts are requested by low cadence or high torque.
     movlw   STABILITY_THRESHOLD
     subwf   low_power_counter, w, c
-    bc      _control_shift_down_execute
-    bra     _control_shift_up_check
+    bc      _control_execute_downshift
+    bra     _control_check_upshift
 
-_control_shift_down_execute:
+_control_execute_downshift:
     call    Servo_IncPos
     call    ResetCounters
     movlw   POST_SHIFT_DELAY
     call    waitSeconds
     return
 
-_control_shift_up_check:
+_control_check_upshift:
     ; Upshifts are requested by high cadence only.
     movlw   STABILITY_THRESHOLD
     subwf   high_power_counter, w, c
-    bc      _control_shift_up_execute
+    bc      _control_execute_upshift
     bra     _control_loop_delay
 
-_control_shift_up_execute:
+_control_execute_upshift:
     call    Servo_DecPos
     call    ResetCounters
     movlw   POST_SHIFT_DELAY

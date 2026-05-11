@@ -21,20 +21,15 @@
 ;   Hall_Init     - configure RB2, enable INT2 and Timer0 interrupts
 ;   hall_count_l  - most recent captured count, low byte  (read directly)
 ;   hall_count_h  - most recent captured count, high byte (read directly)
-;
-; RD2 toggles on every INT2 pulse (diagnostic).
-; RD0 blinks once per capture interval, then blinks hall_count_l times.
-;
-; NOTE: DisplayHallCount is called from inside the TMR0 ISR.
-;       This blocks all other ISRs for the duration of the blink sequence
-;       (~300ms per blink * hall_count_l).  Acceptable for diagnostics.
-;       waitMilliSeconds uses only access-bank variables so BSR is safe.
+;   hall_speed_l  - estimated rear-wheel speed in km/h, low byte
+;   hall_speed_h  - estimated rear-wheel speed in km/h, high byte
 ;
 ; Caller enables GIE (INTCON0 bit 7) and GIEL (INTCON0 bit 6)
 ; after all _Init calls return.
 ;======================================================================
 
 HALL_TMR0_INTERVAL  equ 1           ; Timer0 overflows per capture (~0.5s)
+HALL_WHEEL_CIRC_MM  equ 2170        ; first estimate for a 700x35C tyre
 
 ; ---- Variables (Access Bank) ----
 PSECT udata_acs
@@ -43,14 +38,20 @@ hall_overflow:      DS 1            ; increments when hall_counter wraps 255->0
 hall_tmr0_ticks:    DS 1            ; Timer0 overflow counter
 hall_count_l:       DS 1            ; last captured count, low byte  (output)
 hall_count_h:       DS 1            ; last captured count, high byte (output)
-blink_counter:      DS 1            ; remaining blinks for DisplayHallCount
+hall_speed_l:       DS 1            ; estimated rear-wheel speed in km/h, low byte
+hall_speed_h:       DS 1            ; estimated rear-wheel speed in km/h, high byte
+hall_tmp_l:         DS 1            ; speed calculation scratch low byte
+hall_tmp_h:         DS 1            ; speed calculation scratch mid byte
+hall_tmp_u:         DS 1            ; speed calculation scratch high byte
+hall_acc_l:         DS 1            ; speed accumulator low byte
+hall_acc_h:         DS 1            ; speed accumulator mid byte
+hall_acc_u:         DS 1            ; speed accumulator high byte
 
 ; ---- INT2 ISR (IRQ 80) ----
 PSECT isrHallINT2, class=CODE, reloc=4
 Hall_INT2_ISR:
     BANKSEL PIR10
     bcf     BANKMASK(PIR10), 0, 1       ; clear INT2IF
-    ;call ledA1
     incfsz  hall_counter, f, c          ; increment; skip if result = 0 (wrapped)
     bra     _hall_no_overflow
     incf    hall_overflow, f, c         ; propagate wrap to high counter
@@ -80,8 +81,16 @@ Hall_TMR0_ISR:
     clrf    hall_counter, c
     clrf    hall_overflow, c
 
-    ; Blink RD0 hall_count_l times to display pulse count
-    call    DisplayHallCount
+    ; Publish rear-wheel speed in km/h from the captured pulse count.
+    ; For the current setup:
+    ;   - 9 magnets on the rear wheel
+    ;   - 700x35C tyre, estimated circumference ~2170 mm
+    ;   - capture interval ~0.524 s
+    ;
+    ; This gives:
+    ;   speed_kmh ~= pulses * 53 / 32
+    ; which is a convenient integer approximation of the full formula.
+    call    _Hall_UpdateSpeedKmh
 
 _hall_tmr0_exit:
     retfie  1
@@ -97,21 +106,102 @@ PSECT ivt, class=CODE, reloc=2, ovrld
 PSECT code
 
 ;----------------------------------------------------------------------
-; DisplayHallCount
-; Blinks RD0 a number of times equal to hall_count_l.
-; Skips entirely if hall_count_l == 0.
-; Each blink: 100ms ON, 200ms OFF.
-; Called from TMR0 ISR — interrupts are blocked during blink sequence.
+; _Hall_AddTmpToAcc
+; Adds the current 24-bit hall_tmp value into the 24-bit hall_acc.
 ;----------------------------------------------------------------------
-DisplayHallCount:
+_Hall_AddTmpToAcc:
+    movf    hall_tmp_l, w, c
+    addwf   hall_acc_l, f, c
+    movf    hall_tmp_h, w, c
+    addwfc  hall_acc_h, f, c
+    movf    hall_tmp_u, w, c
+    addwfc  hall_acc_u, f, c
+    return
+
+;----------------------------------------------------------------------
+; _Hall_ShiftTmpLeft
+; Shifts the 24-bit hall_tmp value left by one bit (x2).
+;----------------------------------------------------------------------
+_Hall_ShiftTmpLeft:
+    bcf     STATUS, 0, c
+    rlcf    hall_tmp_l, f, c
+    rlcf    hall_tmp_h, f, c
+    rlcf    hall_tmp_u, f, c
+    return
+
+;----------------------------------------------------------------------
+; _Hall_UpdateSpeedKmh
+; Converts the captured hall pulse count into an estimated rear-wheel
+; speed in km/h and publishes it in hall_speed_h:l.
+;
+; Approximation used here for 9 magnets, 700x35C (~2170 mm), and the
+; current Timer0 capture interval:
+;   speed_kmh ~= pulses * 53 / 32
+;---------------------------------------------------------------------- 
+_Hall_UpdateSpeedKmh:
+    ; Start with the latest captured 16-bit pulse count.
     movf    hall_count_l, w, c
-    bz      _dhc_done               ; nothing to display
-    movwf   blink_counter, c
-_dhc_blink_loop:
-    ;call ledE0
-    decfsz  blink_counter, f, c
-    bra     _dhc_blink_loop
-_dhc_done:
+    movwf   hall_tmp_l, c
+    movf    hall_count_h, w, c
+    movwf   hall_tmp_h, c
+    clrf    hall_tmp_u, c
+
+    ; Build 53x with a shift/add sequence:
+    ;   53 = 1 + 4 + 16 + 32
+    clrf    hall_acc_l, c
+    clrf    hall_acc_h, c
+    clrf    hall_acc_u, c
+
+    ; Add 1x
+    call    _Hall_AddTmpToAcc
+
+    ; Shift to 2x, then 4x and add
+    call    _Hall_ShiftTmpLeft
+    call    _Hall_ShiftTmpLeft
+    call    _Hall_AddTmpToAcc
+
+    ; Shift to 8x, then 16x and add
+    call    _Hall_ShiftTmpLeft
+    call    _Hall_ShiftTmpLeft
+    call    _Hall_AddTmpToAcc
+
+    ; Shift to 32x and add
+    call    _Hall_ShiftTmpLeft
+    call    _Hall_AddTmpToAcc
+
+    ; Divide by 32 with five logical right shifts.
+    movf    hall_acc_l, w, c
+    movwf   hall_tmp_l, c
+    movf    hall_acc_h, w, c
+    movwf   hall_tmp_h, c
+    movf    hall_acc_u, w, c
+    movwf   hall_tmp_u, c
+
+    bcf     STATUS, 0, c
+    rrcf    hall_tmp_u, f, c
+    rrcf    hall_tmp_h, f, c
+    rrcf    hall_tmp_l, f, c
+    bcf     STATUS, 0, c
+    rrcf    hall_tmp_u, f, c
+    rrcf    hall_tmp_h, f, c
+    rrcf    hall_tmp_l, f, c
+    bcf     STATUS, 0, c
+    rrcf    hall_tmp_u, f, c
+    rrcf    hall_tmp_h, f, c
+    rrcf    hall_tmp_l, f, c
+    bcf     STATUS, 0, c
+    rrcf    hall_tmp_u, f, c
+    rrcf    hall_tmp_h, f, c
+    rrcf    hall_tmp_l, f, c
+    bcf     STATUS, 0, c
+    rrcf    hall_tmp_u, f, c
+    rrcf    hall_tmp_h, f, c
+    rrcf    hall_tmp_l, f, c
+
+    movf    hall_tmp_l, w, c
+    movwf   hall_speed_l, c
+    movf    hall_tmp_h, w, c
+    movwf   hall_speed_h, c
     return
 
 ;----------------------------------------------------------------------
@@ -153,7 +243,14 @@ Hall_Init:
     clrf    hall_tmr0_ticks, c
     clrf    hall_count_l, c
     clrf    hall_count_h, c
-    clrf    blink_counter, c
+    clrf    hall_speed_l, c
+    clrf    hall_speed_h, c
+    clrf    hall_tmp_l, c
+    clrf    hall_tmp_h, c
+    clrf    hall_tmp_u, c
+    clrf    hall_acc_l, c
+    clrf    hall_acc_h, c
+    clrf    hall_acc_u, c
 
     ; Start Timer0
     BANKSEL T0CON0

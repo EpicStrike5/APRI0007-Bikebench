@@ -5,7 +5,6 @@
 ; Hardware: CAN module uses hardware CAN FD peripheral in CAN 2.0 mode
 ;           RB4 = CANTX (output to CAN transceiver)
 ;           RB3 = CANRX (input from CAN transceiver)
-;           Requires external CAN transceiver (e.g. ATA6563, MCP2551)
 ;
 ; CAN Configuration:
 ;   - 500 Kbps nominal bit rate (standard for e-bike sensors)
@@ -22,9 +21,6 @@
 ;   CAN_Init           - Initialize CAN module (500 Kbps, RX FIFO)
 ;   CAN_IsRxReady      - Check if message received (Z flag clear = ready)
 ;   CAN_Receive        - Read received message into buffer
-;   CAN_GetMsgID       - Get message ID low byte in W
-;   CAN_GetDLC         - Get data length code (0-8) in W
-;   CAN_Transmit       - Send a CAN message (W = DLC)
 ;
 ; Data access: after CAN_Receive, read data bytes directly:
 ;   movf  can_rx_buffer+0, w, c    ; data byte 0
@@ -78,6 +74,7 @@ can_temp:           DS 1            ; Temporary variable
 can_fifo_ptr_l:     DS 1            ; FIFO pointer low byte
 can_fifo_ptr_h:     DS 1            ; FIFO pointer high byte
 
+; Latest decoded sensor fields from the accepted 0x67D frame.
 torque_h:	    DS 1
 torque_l:	    DS 1
 cadence:	    DS 1
@@ -262,7 +259,8 @@ CAN_Receive:
     andlw   0x0F
     movwf   can_dlc, c
 
-    ; Clamp DLC to 8 bytes max
+    ; Clamp DLC to 8 bytes max so the software copy loop never runs
+    ; past can_rx_buffer, even if a malformed value is seen.
     movlw   8
     cpfsgt  can_dlc, c
     bra     _can_dlc_ok
@@ -306,117 +304,22 @@ _can_rx_done:
 
 
 ;----------------------------------------------------------------------
-; CAN_GetMsgID
-; Get the 11-bit standard message ID from last received message.
-; Output: can_msg_id_l (low 8 bits), can_msg_id_h (high 3 bits)
-;         W = low byte of ID
-;----------------------------------------------------------------------
-CAN_GetMsgID:
-    movf    can_msg_id_l, w, c
-    return
-
-;----------------------------------------------------------------------
-; CAN_GetDLC
-; Get the Data Length Code from last received message.
-; Output: W = DLC (0-8)
-;----------------------------------------------------------------------
-CAN_GetDLC:
-    movf    can_dlc, w, c
-    return
-
-; (Data byte access: read directly from buffer with known offsets)
-;   movf    can_rx_buffer+0, w, c   ; Get data byte 0
-;   movf    can_rx_buffer+1, w, c   ; Get data byte 1
-;   ... etc up to can_rx_buffer+7
-
-;----------------------------------------------------------------------
-; CAN_Transmit
-; Transmit a CAN message (for future expansion - basic implementation)
-; Input: W = DLC (0-8)
-;        can_msg_id_l, can_msg_id_h = 11-bit message ID
-;        can_rx_buffer[0-7] = data to transmit
-;----------------------------------------------------------------------
-CAN_Transmit:
-    movwf   can_dlc, c                  ; Save DLC
-
-    ; Get TXQ User Address (pointer to next TX slot)
-    BANKSEL C1TXQUAL
-    movf    BANKMASK(C1TXQUAL), 0, 1
-    movwf   can_fifo_ptr_l, c
-    movf    BANKMASK(C1TXQUAH), 0, 1
-    movwf   can_fifo_ptr_h, c
-
-    ; Add FIFO base address
-    movlw   CAN_FIFO_BASE_H
-    addwf   can_fifo_ptr_h, f, c
-
-    ; Setup indirect addressing
-    movf    can_fifo_ptr_l, w, c
-    movwf   FSR0L, c
-    movf    can_fifo_ptr_h, w, c
-    movwf   FSR0H, c
-
-    ; Write message header
-    ; Byte 0: SID[7:0]
-    movf    can_msg_id_l, w, c
-    movwf   POSTINC0, c
-    ; Byte 1: SID[10:8]
-    movf    can_msg_id_h, w, c
-    andlw   0x07
-    movwf   POSTINC0, c
-    ; Bytes 2-3: EID (0 for standard frame)
-    clrf    POSTINC0, c
-    clrf    POSTINC0, c
-    ; Byte 4: DLC, IDE=0, RTR=0, BRS=0, FDF=0
-    movf    can_dlc, w, c
-    andlw   0x0F
-    movwf   POSTINC0, c
-    ; Bytes 5-7: reserved (write 0)
-    clrf    POSTINC0, c
-    clrf    POSTINC0, c
-    clrf    POSTINC0, c
-
-    ; Write data bytes
-    movf    can_rx_buffer+0, w, c
-    movwf   POSTINC0, c
-    movf    can_rx_buffer+1, w, c
-    movwf   POSTINC0, c
-    movf    can_rx_buffer+2, w, c
-    movwf   POSTINC0, c
-    movf    can_rx_buffer+3, w, c
-    movwf   POSTINC0, c
-    movf    can_rx_buffer+4, w, c
-    movwf   POSTINC0, c
-    movf    can_rx_buffer+5, w, c
-    movwf   POSTINC0, c
-    movf    can_rx_buffer+6, w, c
-    movwf   POSTINC0, c
-    movf    can_rx_buffer+7, w, c
-    movwf   POSTINC0, c
-
-    ; Request transmission: set UINC and TXREQ
-    BANKSEL C1TXQCONH
-    movlw   0x03                        ; UINC=1, TXREQ=1
-    movwf   BANKMASK(C1TXQCONH), 1
-
-    return
-
-;----------------------------------------------------------------------
 ; Added torque processing helpers
 ;----------------------------------------------------------------------
 PSECT udata_acs
-    torque_nm:           DS 1            ; displayed torque in whole Nm
+    torque_nm:           DS 1            ; filtered/displayed torque in whole Nm
     torque_sample:       DS 1            ; latest instantaneous torque sample in whole Nm
-    torque_calc_l:       DS 1            ; torque conversion scratch low byte
-    torque_calc_h:       DS 1            ; torque conversion scratch high byte
-    torque_sum_l:        DS 1            ; low byte of the 32-sample running sum
-    torque_sum_h:        DS 1            ; high byte of the 32-sample running sum
-    torque_buf_idx:      DS 1            ; circular buffer write index (0..31)
+    torque_calc_l:       DS 1            ; generic torque scratch low byte
+    torque_calc_h:       DS 1            ; generic torque scratch high byte
+    torque_sum_l:        DS 1            ; low byte of the 128-sample running sum
+    torque_sum_h:        DS 1            ; high byte of the 128-sample running sum
+    torque_buf_idx:      DS 1            ; circular buffer write index (0..127)
     torque_oldest:       DS 1            ; sample being replaced in the circular buffer
     torque_clear_count:  DS 1            ; startup loop counter used to clear the buffer
 
 PSECT udata_can_torque, class=UDATA
-    torque_history:      DS 32           ; last 32 torque samples (zero-prefilled)
+    ; Circular buffer that holds the latest 128 instantaneous torque samples.
+    torque_history:      DS 128          ; last 128 torque samples (zero-prefilled)
 
 PSECT code
 
@@ -425,18 +328,23 @@ PSECT code
 ; Clears all torque/cadence state used by the display path.
 ;----------------------------------------------------------------------
 CAN_Torque_Init:
+    ; Clear the latest decoded frame fields and the published filtered value.
     clrf    torque_l, c
     clrf    torque_h, c
     clrf    cadence, c
     clrf    torque_nm, c
     clrf    torque_sample, c
+
+    ; Reset moving-average bookkeeping.
     clrf    torque_sum_l, c
     clrf    torque_sum_h, c
     clrf    torque_buf_idx, c
     clrf    torque_oldest, c
 
+    ; Prefill the circular buffer with zeroes so the first published
+    ; values ramp in smoothly from a known state.
     lfsr    0, torque_history
-    movlw   32
+    movlw   128
     movwf   torque_clear_count, c
 
 _can_torque_clear_history:
@@ -449,16 +357,20 @@ _can_torque_clear_history:
 ; CAN_ServiceTorqueSensor
 ; Scans received CAN frames until FIFO is empty or ID 0x67D is found.
 ; When ID 0x67D is found, extracts torque/cadence, converts torque to
-; whole Nm, updates a 32-sample circular buffer, and publishes the
-; moving average over the latest 32 valid sensor frames.
+; whole Nm, updates a 128-sample circular buffer, and publishes the
+; moving average over the latest 128 valid sensor frames.
 ;----------------------------------------------------------------------
 CAN_ServiceTorqueSensor:
 _can_torque_scan:
+    ; Exit immediately if FIFO1 is empty.
     call    CAN_IsRxReady
     bz      _can_torque_done
 
+    ; Pull one raw frame out of FIFO1.
     call    CAN_Receive
 
+    ; Software filter: keep scanning until the Bafang torque frame
+    ; with standard ID 0x67D is found.
     movf    can_msg_id_h, w, c
     xorlw   0x06
     bnz     _can_torque_scan
@@ -477,6 +389,8 @@ _can_torque_scan:
     movf    can_rx_buffer+5, w, c
     movwf   cadence, c
 
+    ; Convert the raw 16-bit sensor value into an instantaneous
+    ; integer torque sample in Nm.
     call    _CAN_ComputeTorqueNm
 
     ; Circular moving average:
@@ -484,7 +398,7 @@ _can_torque_scan:
     ;   2. overwrite that buffer slot with the new sample
     ;   3. add the new sample to the running sum
     ;   4. advance the circular index
-    ;   5. publish sum / 32
+    ;   5. publish sum / 128
     lfsr    0, torque_history
     movf    torque_buf_idx, w, c
     addwf   FSR0L, f, c
@@ -494,32 +408,43 @@ _can_torque_scan:
     movf    INDF0, w, c
     movwf   torque_oldest, c
 
+    ; Remove the sample that is about to be overwritten.
     movf    torque_oldest, w, c
     subwf   torque_sum_l, f, c
     movlw   0x00
     subwfb  torque_sum_h, f, c
 
+    ; Store the new sample in that same buffer slot.
     movf    torque_sample, w, c
     movwf   INDF0, c
 
+    ; Add the new sample to the running sum.
     movf    torque_sample, w, c
     addwf   torque_sum_l, f, c
     movlw   0x00
     addwfc  torque_sum_h, f, c
 
+    ; Advance the circular index and wrap back to 0 after slot 127.
     incf    torque_buf_idx, f, c
-    movlw   32
+    movlw   128
     cpfseq  torque_buf_idx, c
     bra     _can_torque_average
     clrf    torque_buf_idx, c
 
 _can_torque_average:
-    ; Divide the 16-bit running sum by 32 with five logical right shifts.
+    ; Publish the moving average by dividing the running sum by 128.
+    ; Since 128 = 2^7, this is just seven logical right shifts.
     movf    torque_sum_l, w, c
     movwf   torque_calc_l, c
     movf    torque_sum_h, w, c
     movwf   torque_calc_h, c
 
+    bcf     STATUS, 0, c
+    rrcf    torque_calc_h, f, c
+    rrcf    torque_calc_l, f, c
+    bcf     STATUS, 0, c
+    rrcf    torque_calc_h, f, c
+    rrcf    torque_calc_l, f, c
     bcf     STATUS, 0, c
     rrcf    torque_calc_h, f, c
     rrcf    torque_calc_l, f, c
@@ -549,6 +474,8 @@ _can_torque_done:
 ; Result is truncated to an integer Nm and stored in torque_sample.
 ;----------------------------------------------------------------------
 _CAN_ComputeTorqueNm:
+    ; Copy the raw little-endian torque word into scratch registers so
+    ; the original decoded bytes remain available if needed.
     movf    torque_l, w, c
     movwf   torque_calc_l, c
     movf    torque_h, w, c
@@ -565,6 +492,8 @@ _CAN_ComputeTorqueNm:
 
 _can_torque_positive:
     ; Multiply by 8 with three 16-bit left shifts.
+    ; This implements the numerator of:
+    ;   torque = 8 * (raw - 750) / 245
     bcf     STATUS, 0, c
     rlcf    torque_calc_l, f, c
     rlcf    torque_calc_h, f, c
@@ -578,6 +507,8 @@ _can_torque_positive:
     clrf    torque_sample, c
 
 _can_torque_div_loop:
+    ; Repeated subtraction by 245 (0x00F5).
+    ; Each successful subtraction increments the integer Nm result by 1.
     movf    torque_calc_h, w, c
     bnz     _can_torque_do_sub
     movlw   0xF5
