@@ -1,69 +1,66 @@
-;======================================================================
-; pinconfig.inc - Centralised Pin Configuration (pic-as syntax)
-; Processor: PIC18F47Q84 @ 64MHz
+; ==========================================================
+; pinconfig.inc - Central pin configuration
+; Processor: PIC18F47Q84 @ 64 MHz
 ;
-; ALL pin I/O setup, pull-ups, and PPS (Peripheral Pin Select)
-; remapping are consolidated here.  Peripheral-specific timer,
-; interrupt and module configuration stays in its own .inc file.
+; Groups pin direction, digital mode, pull-ups, and PPS
+; remapping in one place. Call PinConfig_Init first.
+; ==========================================================
 ;
-; Call PinConfig_Init FIRST, before any peripheral _Init routine.
-;
-; ---------------------------------------------------------------
+; ----------------------------------------------------------
 ; PIN ASSIGNMENT TABLE
-; ---------------------------------------------------------------
-; Pin   Function         Dir   Analog  Pull-up  PPS / Note
-; ----  ---------------  ----  ------  -------  ----------------
-; RA0   (unused)        in    no      no       - (freed from old parallel LCD)
-; RA1   (unused)        in    no      no       -
-; RA2   (unused)        in    no      no       -
-; RA3   (unused)        in    no      no       -
-; RA4   (unused)        in    no      YES      -
-; RA5   (unused)        in    no      YES      -
-; RA6   (unused)        in    no      YES      -
-; RA7   (unused)        in    no      YES      -
+; ----------------------------------------------------------
+; Pin   Function                                 Dir   Analog  Pull-up  PPS
+; ----  ---------------------------------------  ----  ------  -------  ----------------
+; RA0   Button / auto-manual mode                in    no      YES      -
+; RA1   Auto-mode LED                            out   no      no       -
+; RA2   Button / LCD screen toggle               in    no      YES      -
+; RA3   Button / user input                      in    no      YES      -
+; RA4   Button / user input                      in    no      YES      -
+; RA5   LED / general output                     out   no      no       -
+; RA6   LCD direct RS                            out   no      no       -
+; RA7   LCD contrast test input                  in    no      YES      -
 ;
-; RB0   Button 1 (RIGHT) in   no      YES      -
-; RB1   Button 2 (LEFT)  in   no      YES      -
-; RB2   Hall INT2        in    no      YES      - (rising edge counter)
-; RB3   (unused)         in    no      YES      -
-; RB4   (unused)         in    no      YES      -
-; RB5   (unused)         in    no      YES      -
-; RB6   (unused)         in    no      YES      -
-; RB7   (unused)         in    no      YES      -
+; RB0   Button / manual harder gear              in    no      YES      -
+; RB1   Button / manual easier gear              in    no      YES      -
+; RB2   Hall sensor input                        in    no      YES      -
+; RB3   CANRX                                    in    no      no       CANRXPPS = 0x0B
+; RB4   CANTX                                    out   no      no       RB4PPS   = 0x46
+; RB5   Servo output                             out   no      no       -
+; RB6   Unused                                   in    no      YES      -
+; RB7   Unused                                   in    no      YES      -
 ;
-; RC0   (unused)         in    no      YES      -
-; RC1   (unused)         in    no      YES      -
-; RC2   Servo PWM        out   no      no       - (SW toggle in ISR)
-; RC3   I2C SCL          out   no      no       - OPEN-DRAIN (ODCONC bit 3)
-; RC4   I2C SDA          out   no      no       - OPEN-DRAIN (ODCONC bit 4)
-; RC5   (unused)         in    no      YES      -
-; RC6   (unused)         in    no      YES      -
-; RC7   (unused)         in    no      YES      -
+; RC0   LCD direct RW                            out   no      no       -
+; RC1   LCD direct E                             out   no      no       -
+; RC2   LCD direct DB0                           out   no      no       -
+; RC3   LCD direct DB1                           out   no      no       -
+; RC4   LCD direct DB7                           out   no      no       -
+; RC5   LCD direct DB6                           out   no      no       -
+; RC6   Unused                                   in    no      YES      -
+; RC7   Unused                                   in    no      YES      -
 ;
-; RD0   LED feedback     out   no      no       -
-; RD1   DEBUG: Servo OK  out   no      no       -  (LED: Servo_Init done)
-; RD2   DEBUG: Servo ISR out   no      no       -  (LED: ISR toggling)
-; RD3   DEBUG: Hall ISR  out   no      no       -  (LED: Hall pulse seen)
-; RD4   (unused)         in    no      YES      - (freed from old parallel LCD)
-; RD5   (unused)         in    no      YES      -
-; RD6   (unused)         in    no      YES      -
-; RD7   (unused)         in    no      YES      -
+; RD0   LCD direct DB2                           out   no      no       -
+; RD1   LCD direct DB3                           out   no      no       -
+; RD2   LCD direct BL-                           out   no      no       -
+; RD3   LCD direct BL+                           out   no      no       -
+; RD4   Unused                                   in    no      YES      -
+; RD5   Unused                                   in    no      YES      -
+; RD6   LCD direct DB5                           out   no      no       -
+; RD7   LCD direct DB4                           out   no      no       -
 ;
-; RE0   (unused)         in    no      YES      -
-; RE1   (unused)         in    no      YES      -
-; RE2   (unused)         in    no      YES      -
-; RE3   MCLR             in    -       -        - (config bit)
+; RE0   LED / startup indicator                  out   no      no       -
+; RE1   Button / user input                      in    no      YES      -
+; RE2   LED / general output                     out   no      no       -
+; RE3   MCLR                                     in    -       -        - (config bit)
 ;
-; ---------------------------------------------------------------
-; ALTERNATIVE: CAN BUS (uncomment PPS block below to enable)
-;   RB0 -> CANTX  (out, digital, no pull-up)  RB0PPS  = 0x46
-;   RB1 -> CANRX  (in,  digital, no pull-up)  CANRXPPS= 0x09
-;   NOTE: conflicts with button pins - pick one or relocate
-; ---------------------------------------------------------------
+; ----------------------------------------------------------
+; CAN BUS USED IN THIS PROJECT
+;   RB4 -> CANTX  (out, digital, no pull-up)  RB4PPS   = 0x46
+;   RB3 -> CANRX  (in,  digital, no pull-up)  CANRXPPS = 0x0B
+; ----------------------------------------------------------
 ;
-; ---------------------------------------------------------------
+; ----------------------------------------------------------
 ; PPS REFERENCE
-; ---------------------------------------------------------------
+; ----------------------------------------------------------
 ;
 ; OUTPUT function codes (RxyPPS values):
 ;   0x00 = LATxy (default GPIO)
@@ -129,8 +126,8 @@ PinConfig_Init:
     BANKSEL ANSELA
     clrf    BANKMASK(ANSELA), 1         ; PORTA all digital
     clrf    BANKMASK(ANSELB), 1         ; PORTB all digital (buttons)
-    clrf    BANKMASK(ANSELC), 1         ; PORTC all digital (servo RC2)
-    clrf    BANKMASK(ANSELD), 1         ; PORTD all digital (LED RD0)
+    clrf    BANKMASK(ANSELC), 1         ; PORTC all digital
+    clrf    BANKMASK(ANSELD), 1         ; PORTD all digital
     clrf    BANKMASK(ANSELE), 1         ; PORTE all digital
 
     ; ==================================================================
@@ -138,28 +135,26 @@ PinConfig_Init:
     ;    Only enable on button pins (RB0, RB1).  All others off.
     ; ==================================================================
     ; WPUA is in the same bank as ANSELA (bank 4) - no BANKSEL needed
-    movlw   0x1D			; bits 0,2,3,4 = RB0,RB2, RB3, RB4 buttons only
-    movwf   BANKMASK(WPUA), 1           ;
-    movlw   0x03                        ; bits 0,1 = RB0,RB1 buttons only
-    movwf   BANKMASK(WPUB), 1
+    movlw   0xDD                        ; buttons only
+    movwf   BANKMASK(WPUA), 1 
+    movlw   0x07                        ; RB0,RB1 buttons + RB2 hall pull-up
+    movwf   BANKMASK(WPUB), 1           ; no pull-up on RB3/RB4 CAN pins
     clrf    BANKMASK(WPUC), 1           ; PORTC no pull-ups
-    clrf    BANKMASK(WPUD), 1           ; PORTD no pull-ups (LEDs)
-    movlw   0x01			; bits 1 = RB1 button only
-    movwf    BANKMASK(WPUE), 1           ; PORTE no pull-ups
-    ; To re-enable all pull-ups, replace clrf with 0xFF movwf
-    ; and change WPUB line back to 0xFF.
+    clrf    BANKMASK(WPUD), 1           ; PORTD no pull-ups
+    movlw   0x02                        ; RE1 button pull-up
+    movwf   BANKMASK(WPUE), 1
 
     ; ==================================================================
     ; 3. OUTPUT LATCHES  (LATx : initial output state)
     ;    Set before changing TRIS to avoid glitches.
     ; ==================================================================
     ; LAT registers also in bank 4 - no BANKSEL needed
-    clrf    BANKMASK(LATA), 1           ; PORTA = 0x00
-    clrf    BANKMASK(LATB), 1           ; PORTB = 0x00
-    movlw   0x18                        ; RC3=1 (SCL idle HIGH), RC4=1 (SDA idle HIGH)
-    movwf   BANKMASK(LATC), 1           ; RC2=0 (servo starts LOW)
-    clrf    BANKMASK(LATD), 1           ; PORTD = 0x00  (RD0 LED OFF)
-    clrf    BANKMASK(LATE), 1           ; PORTE = 0x00
+
+    clrf    BANKMASK(LATA), 1         ; RA6 = RS starts LOW, RA7 left for external contrast test
+    clrf    BANKMASK(LATB), 1
+    clrf    BANKMASK(LATC), 1         ; RC0..RC5 control/data start LOW
+    clrf    BANKMASK(LATD), 1         ; RD0,RD1,RD6,RD7 data + RD2,RD3 BL
+    clrf    BANKMASK(LATE), 1          ; RE0/RE2 LEDs start LOW
 
     ; ==================================================================
     ; 4. DATA DIRECTION  (TRISx : 1=input, 0=output)
@@ -167,78 +162,32 @@ PinConfig_Init:
     ;    Only clear bits for pins used as outputs.
     ; ==================================================================
     ; TRIS registers also in bank 4 - no BANKSEL needed
-    movlw   0xFF                        ; PORTA all inputs (RA0-RA3 freed from parallel LCD)
-    movwf   BANKMASK(TRISA), 1
-    movlw   0xEF                        ; PORTB all inputs (RB0,RB1 buttons; RB2 Hall INT2; RB5: PWM output)
-    movwf   BANKMASK(TRISB), 1
-    movlw   0xE3                        ; bits 2,3,4 clear = RC2 (servo, LCD mainentant), RC3 (SCL), RC4 (SDA)
-    movwf   BANKMASK(TRISC), 1          ; 0xE3 = 0b11100011
-    movlw   0xF0                        ; bits 0-3 clear = RD0-RD3 LED/debug outputs
-    movwf   BANKMASK(TRISD), 1          ; RD4,RD5 freed (parallel LCD no longer used)
-    movlw   0xFF
-    movwf   BANKMASK(TRISE), 1          ; PORTE all inputs (RE3=MCLR)
+    movlw   0x9D
+    movwf   BANKMASK(TRISA), 1        ; RA7=input for external contrast, RA6=RS out, RA5/RA1 outputs kept
+    movlw   0xCF
+    movwf   BANKMASK(TRISB), 1        ; same CAN/servo setup as above
+    movlw   0xC0
+    movwf   BANKMASK(TRISC), 1        ; RC0..RC5 LCD outputs, RC6..RC7 inputs
+    movlw   0x30
+    movwf   BANKMASK(TRISD), 1        ; RD0,RD1,RD2,RD3,RD6,RD7 LCD outputs
+    movlw   0x02
+    movwf   BANKMASK(TRISE), 1        ; RE1 button input, RE0/RE2 LED outputs
 
     ; ==================================================================
-    ; 5. OPEN-DRAIN CONTROL  (ODCONx : 1=open-drain, 0=push-pull)
-    ;    RC3 (SCL) and RC4 (SDA) MUST be open-drain for I2C.
-    ;    Open-drain: bsf LATC,3/4 releases pin (pulled HIGH by 4.7kΩ
-    ;    resistors on PCF8574 backpack); bcf LATC,3/4 drives it LOW.
-    ;    All other output pins remain push-pull (default).
-    ; ==================================================================
-    ; ODCON registers are in bank 4 - no BANKSEL needed
-    clrf    BANKMASK(ODCONA), 1         ; PORTA push-pull
-    clrf    BANKMASK(ODCONB), 1         ; PORTB push-pull
-    movlw   0x18                        ; bits 3,4 = RC3 (SCL), RC4 (SDA) open-drain
-    movwf   BANKMASK(ODCONC), 1
-    clrf    BANKMASK(ODCOND), 1         ; PORTD push-pull (LED outputs)
-    clrf    BANKMASK(ODCONE), 1         ; PORTE push-pull
-
-    ; ==================================================================
-    ; 6. PPS - PERIPHERAL PIN SELECT  (bank 2: 0x200-0x26B)
+    ; 5. PPS - PERIPHERAL PIN SELECT  (bank 2: 0x200-0x26B)
     ;    Configure remappable I/O routing here.
     ;    Currently no PPS needed (servo uses CCP1 SW toggle, buttons
     ;    are direct GPIO reads).
     ; ==================================================================
-    ; BANKSEL PPSLOCK                   ; all PPS registers in bank 2
+    BANKSEL ODCONC
+    clrf    BANKMASK(ODCONC), 1       ; direct LCD uses normal push-pull outputs
 
-    ; --- CAN Bus PPS (uncomment when using CAN) ----------------------
-    ; BANKSEL CANRXPPS
-    ; movlw   0x09                      ; RB1 -> CAN RX input
-    ; movwf   BANKMASK(CANRXPPS), 1
-    ; movlw   0x46                      ; CAN TX -> RB0 output
-    ; movwf   BANKMASK(RB0PPS), 1
+    ; --- CAN Bus PPS -------------------------------------------------
+    BANKSEL CANRXPPS
+    movlw   0x0B                        ; RB3 -> CANRX peripheral input
+    movwf   BANKMASK(CANRXPPS), 1
+    movlw   0x46                        ; CANTX peripheral output -> RB4
+    movwf   BANKMASK(RB4PPS), 1
 
-    ; --- UART1 PPS (example: TX on RC6, RX on RC7) -------------------
-    ; BANKSEL RC6PPS
-    ; movlw   0x33                      ; TX1 -> RC6 output
-    ; movwf   BANKMASK(RC6PPS), 1
-    ; movlw   0x17                      ; RC7 -> RX1 input
-    ; movwf   BANKMASK(RX1PPS), 1
-
-    ; --- SPI1 PPS (example: SCK=RC3, SDO=RC5, SDI=RC4, SS=RA5) ------
-    ; BANKSEL RC3PPS
-    ; movlw   0x20                      ; SPI1_SCK -> RC3 output
-    ; movwf   BANKMASK(RC3PPS), 1
-    ; movlw   0x21                      ; SPI1_SDO -> RC5 output
-    ; movwf   BANKMASK(RC5PPS), 1
-    ; movlw   0x14                      ; RC4 -> SPI1_SDI input
-    ; movwf   BANKMASK(SPI1SDIPPS), 1
-    ; movlw   0x05                      ; RA5 -> SPI1_SS input
-    ; movwf   BANKMASK(SPI1SSPPS), 1
-
-    ; --- CCP1 output PPS (DISABLED: using software toggle via LATC) ---
-    ; Note: CCP compare-toggle output may not drive through PPS on
-    ;       PIC18-Q84.  We toggle RC2 manually in Servo_ISR instead.
-    ; BANKSEL RC2PPS
-    ; movlw   0x09                      ; CCP1 -> RC2 output
-    ; movwf   BANKMASK(RC2PPS), 1
-
-    ; --- PPS Lock (uncomment to prevent accidental PPS changes) -------
-    ; BANKSEL PPSLOCK
-    ; movlw   0x55
-    ; movwf   BANKMASK(PPSLOCK), 1
-    ; movlw   0xAA
-    ; movwf   BANKMASK(PPSLOCK), 1
-    ; bsf     BANKMASK(PPSLOCK), 0, 1   ; PPSLOCKED = 1
 
     return

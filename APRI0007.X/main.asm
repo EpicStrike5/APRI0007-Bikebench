@@ -1,38 +1,16 @@
-;======================================================================
-; main.asm - Servo Control with Button Input
-; Processor: PIC18F47Q84 @ 64MHz (Internal HFINTOSC)
+; ==========================================================
+; main.asm - Top-level firmware flow
+; Processor: PIC18F47Q84 @ 64 MHz
 ;
-; Hardware connections:
-;   RC2 = Servo PWM output (Timer1 overflow interrupt)
-;   RB0 = Button 1 - rotate RIGHT  (active LOW, internal pull-up)
-;   RB1 = Button 2 - rotate LEFT   (active LOW, internal pull-up)
-;   RD0 = LED feedback
-;
-; Diagnostic LEDs (active when SERVO_DEBUG=1 in servo_hw.inc):
-;   RD1 = ON steady   -> Servo_Init completed successfully
-;   RD2 = dim glow    -> Servo_ISR is firing (~100Hz toggle)
-;   RC2 = two 250ms pulses at startup -> pin and wiring OK
-;   If RD1 ON but RD2 dark -> interrupt not firing (IVT/config)
-;   If RD2 glows but no scope on RC2 -> pin or scope issue
-;
-; How it works:
-;   Servo PWM runs autonomously via Timer1 overflow interrupt (50 Hz).
-;   The main loop detects released->pressed button edges every ~20ms.
-;   Edge detection prevents a stuck/shorted pin from continuously
-;   driving the servo.  CPU is free for CAN and other tasks.
-;
-; Servo position (0-255) maps to ~0-270 degrees:
-;   0   -> ~0 deg   (400us HIGH pulse)
-;   128 -> ~135 deg (~1.49ms HIGH pulse)
-;   255 -> ~270 deg (~2.57ms HIGH pulse)
-;======================================================================
+; Coordinates startup, periodic servicing, LCD refresh,
+; button handling, and automatic control.
+; ==========================================================
 
 PROCESSOR 18F47Q84
 
 #include <xc.inc>
 
-; ---- Configuration Bits ----
-; Internal oscillator 64MHz, no watchdog, low-voltage programming on
+; ---- Configuration bits ----
 CONFIG "FEXTOSC = OFF"              ; no external oscillator
 CONFIG "RSTOSC = HFINTOSC_64MHZ"    ; internal 64 MHz at startup
 CONFIG "CLKOUTEN = OFF"             ; clock out disabled
@@ -40,41 +18,103 @@ CONFIG "WDTE = OFF"                 ; watchdog timer disabled
 CONFIG "LVP = ON"                   ; low-voltage programming enabled
 CONFIG "MCLRE = EXTMCLR"           ; external master clear
 CONFIG "MVECEN = ON"               ; multi-vector interrupts (REQUIRED)
+CONFIG "JTAGEN = OFF"              ; JTAG disabled
 CONFIG "XINST = OFF"                ; extended instruction set off
 CONFIG "DEBUG = OFF"                ; background debugger disabled
+
 
 ; ---- Reset Vector (linked to address 0 via linker option) ----
 PSECT resetVec, class=CODE, reloc=2
 resetVec:
     goto    start
 
-; ---- Include Libraries ----
-; These files add their own PSECT udata_acs (variables) and
-; PSECT code (functions). The linker auto-places everything.
+; ---- Included modules ----
 #include "wait.inc"
 #include "pinconfig.inc"
 #include "servo_hw.inc"
 #include "can_torque.inc"
+#include "Control.inc"
 #include "debounce.inc"
 #include "hall.inc"
-;#include "lcd.inc"
-;#include "Control.inc"
+#include "lcd_direct.inc"
 
-; ---- Main variables (edge detection) ----
-; btn_prev tracks the last-seen db_stable value so the main loop can
-; detect released->pressed transitions instead of polling raw level.
-; A button that is stuck LOW from power-on will fire its handler at most
-; once (on the very first edge when prev=released), then never again.
+; ---- Main variables ----
+; This file only keeps the display state needed by the top-level loop.
 PSECT udata_acs
-btn_prev:       DS 1            ; db_stable value from previous loop iteration
-btn_edge:       DS 1            ; scratch: bits that just transitioned released->pressed
-main_ctr:       DS 1            ; free-running loop counter (0-255, wraps), never touched by ISR
-hall_snap_l:    DS 1            ; atomic snapshot of hall_count_l (taken with GIE=0)
-hall_snap_h:    DS 1            ; atomic snapshot of hall_count_h (taken with GIE=0)
-bike_repos:     DS 1            
+lcd_screen_mode:     DS 1       ; bit 0 selects torque/cadence vs power/speed page
+control_delay_ticks: DS 1       ; shared non-blocking control cooldown/countdown (20 ms per tick)
+lcd_refresh_ticks:   DS 1       ; LCD refresh countdown (20 ms per tick)
+lcd_clear_request:   DS 1       ; bit 0 requests a one-shot LCD_Clear on the next refresh
+
+; ---- Timer4 scheduler tick ----
+; Fosc/4 = 16 MHz, prescaler 1:128, T4PR = 249, postscaler 1:10
+; -> one interrupt every 20 ms
+T4_T4CON_VAL           equ 0xF9
+T4_T4CLK_VAL           equ 0x01
+T4_T4HLT_VAL           equ 0x00
+T4_T4RST_VAL           equ 0x00
+T4_T4PR_VAL            equ 249
+LCD_REFRESH_TICKS      equ 10        ; 10 x 20 ms = 200 ms
 
 ; ---- Main Code ----
 PSECT code
+
+; ----------------------------------------------------------
+; Timer4_ISR
+; 20 ms tick for the software counters.
+; ----------------------------------------------------------
+PSECT isrTimer4, class=CODE, reloc=4
+Timer4_ISR:
+    BANKSEL PIR11
+    bcf     BANKMASK(PIR11), 3, 1      ; clear TMR4IF
+
+    movf    control_delay_ticks, f, c
+    bz      _timer4_skip_control
+    decf    control_delay_ticks, f, c
+
+_timer4_skip_control:
+    movf    cadence_saved_ticks, f, c
+    bz      _timer4_skip_cadence_saved
+    decf    cadence_saved_ticks, f, c
+
+_timer4_skip_cadence_saved:
+    movf    lcd_refresh_ticks, f, c
+    bz      _timer4_done
+    decf    lcd_refresh_ticks, f, c
+
+_timer4_done:
+    retfie  1
+
+PSECT ivt, class=CODE, reloc=2, ovrld
+    ORG     91*2
+    DW      Timer4_ISR >> 2
+
+PSECT code
+
+; ----------------------------------------------------------
+; Timer4_Init
+; Configure Timer4 as the 20 ms scheduler tick.
+; ----------------------------------------------------------
+Timer4_Init:
+    BANKSEL T4CON
+    clrf    BANKMASK(T4CON), 1
+    movlw   T4_T4CLK_VAL
+    movwf   BANKMASK(T4CLKCON), 1
+    movlw   T4_T4HLT_VAL
+    movwf   BANKMASK(T4HLT), 1
+    movlw   T4_T4RST_VAL
+    movwf   BANKMASK(T4RST), 1
+    movlw   T4_T4PR_VAL
+    movwf   BANKMASK(T4PR), 1
+    clrf    BANKMASK(T4TMR), 1
+    movlw   T4_T4CON_VAL
+    movwf   BANKMASK(T4CON), 1
+
+    BANKSEL PIR11
+    bcf     BANKMASK(PIR11), 3, 1
+    BANKSEL PIE11
+    bsf     BANKMASK(PIE11), 3, 1
+    return
 
 start:
     ; ==========================================================
@@ -83,126 +123,146 @@ start:
 
     ; --- All pins: ANSEL, TRIS, LAT, WPU, PPS (one place) ---
     call    PinConfig_Init
-
-    ; --- Startup LED blink: confirms chip is alive ---
-    BANKSEL LATD
-    bsf     BANKMASK(LATD), 0, 1        ; LED ON
-    movlw   250
-    call    waitMilliSeconds
-    bcf     BANKMASK(LATD), 0, 1        ; LED OFF
-    movlw   250
-    call    waitMilliSeconds
-    bsf     BANKMASK(LATD), 0, 1        ; LED ON
-    movlw   250
-    call    waitMilliSeconds
-    bcf     BANKMASK(LATD), 0, 1        ; LED OFF
-
-    ; --- Initialise peripherals and enable interrupts ---
+    call    LCD_Init
     call    Debounce_Init
-    ; Seed btn_prev with the current debounced state so the first loop
-    ; iteration sees no edges and does not fire spurious handlers.
-    movf    db_stable, w, c
-    movwf   btn_prev, c
-    call    Servo_Init
+    call    Buttons_Init
     call    Hall_Init
     call    CAN_Init
+    call    CAN_Torque_Init
+    call    Timer4_Init
+
+    ; --- Startup LCD banner shown before the servo is enabled ---
+    call    LCD_GotoLine1
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   'S'
+    call    LCD_SendChar
+    movlw   'Y'
+    call    LCD_SendChar
+    movlw   'S'
+    call    LCD_SendChar
+    movlw   'T'
+    call    LCD_SendChar
+    movlw   'E'
+    call    LCD_SendChar
+    movlw   'M'
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+
+    call    LCD_GotoLine2
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   ' '
+    call    LCD_SendChar
+    movlw   'B'
+    call    LCD_SendChar
+    movlw   'O'
+    call    LCD_SendChar
+    movlw   'O'
+    call    LCD_SendChar
+    movlw   'T'
+    call    LCD_SendChar
+    movlw   'I'
+    call    LCD_SendChar
+    movlw   'N'
+    call    LCD_SendChar
+    movlw   'G'
+    call    LCD_SendChar
+
+    ; Delay servo start to reduce peak startup current demand on the battery.
+    ; 2 s is a conservative compromise: enough for supply/BMS settling
+    ; without making the system feel slow to boot.
+    movlw   2
+    call    waitSeconds
+
+    ; Continue with the actuator and control initialization.
+    call    Servo_Init
+    call    Control_Init
+
+
+    ; --- Startup LED blink: confirms the system reached full init ---
+    call ledE0
+    
+    ; --- Initialise scheduler/display state and enable interrupts ---
+    movlw   1
+    movwf   lcd_screen_mode, c          ; start on the power/speed screen
+    clrf    control_delay_ticks, c      ; allow the first automatic control step immediately
+    clrf    lcd_refresh_ticks, c        ; force the first LCD refresh immediately
+    clrf    lcd_clear_request, c        ; no pending clear request at startup
+    
     
     BANKSEL INTCON0
     bsf     BANKMASK(INTCON0), 6, 1     ; GIEL = 1  (low-priority interrupts)
     bsf     BANKMASK(INTCON0), 7, 1     ; GIE/GIEH = 1 (high-priority)
     movlw   100
     call    waitMilliSeconds
-    clrf    main_ctr, c                 ; initialise loop counter after interrupts live
 
     ; ==========================================================
     ; MAIN LOOP
-    ; Servo PWM runs in background via Timer1 overflow interrupt.
-    ; Timer2 ISR (debounce.inc) updates db_stable every 10ms.
-    ;
-    ; Edge detection: handlers fire only on released->pressed
-    ; transition, not while held.  This prevents a shorted/stuck
-    ; button pin from continuously driving the servo.
-    ;
-    ; Algorithm (active-LOW: 0=pressed, 1=released):
-    ;   changed = db_stable XOR btn_prev        (bits that flipped)
-    ;   just_pressed = changed AND btn_prev      (were released, now pressed)
-    ;   btn_prev = db_stable                     (update for next loop)
+    ; Servo output runs in background via Timer1 overflow interrupt.
+    ; Timer2 ISR (debounce.inc) updates the debounced button state.
+    ; The foreground loop services sensors, refreshes the LCD, and
+    ; applies user actions / automatic control decisions.
     ; ==========================================================
 mainLoop:
+    call    CAN_ServiceTorqueSensor
+    call    ComputePower
+    ; Update the LCD at a human-readable rate.
+    call    LCD_RefreshDisplay
+    call    Buttons_HandleMainLoop
     
-    ;movlw   1
-    ;subwf   hall_count_l, w, c
-    ;btfss   STATUS, 0, c
-    ;goto    bike_au_repos
-    
-    ;1 si manuel, 0 si auto
-    ;btfsc bike_repos, c
-    ;bra   manuel
-    
-    ;call GearSiftControl
-    bra   manuel
- 
-    movlw   200
-    call    waitMilliSeconds
-
+    btfsc   flag_auto, 0, c
+    call    GearShiftControl
     goto    mainLoop
     
-    
-bike_au_repos:
-    
-    
-    ;Check button auto-manuel
-    ;btfsc   btn_edge, c
-    ;call    handleButtonAM
-    
-    ;Check button affichage LCD
-    ;btfsc   btn_edge, c
-    ;call    handleButtonLCD
-    
-    ;Check button set power
-    ;btfsc   btn_edge, c
-    ;call    handleButtonPower
-    
-    goto mainLoop
-
-led:
-    BANKSEL LATD
-    bsf     BANKMASK(LATA), 1, 1        ; LED D0 ON
-    movlw   100
+ledE0:
+    ; Short startup confirmation blink on RE0.
+    BANKSEL LATE
+    bsf     BANKMASK(LATE), 0, 1        ; LED ON
+    movlw   250
     call    waitMilliSeconds
-    BANKSEL LATD
-    bcf     BANKMASK(LATA), 1, 1        ; LED D0 OFF
-manuel: 
-    ; --- Compute just-pressed bits ---
-    movf    db_stable, w, c             ; W = current debounced state
-    xorwf   btn_prev, w, c             ; W = bits that changed (btn_prev unchanged)
-    andwf   btn_prev, w, c             ; W = bits: were 1 (released) AND now 0 (pressed)
-    movwf   btn_edge, c                 ; save just-pressed flags
-    movf    db_stable, w, c             ; update prev for next iteration
-    movwf   btn_prev, c
-        ; --- Button 1 (RB0) : rotate RIGHT ---
-    btfss   btn_edge, 0, c             ; skip if button 1 not just pressed
-    call    handleButton1
-
-    ; --- Button 2 (RB1) : rotate LEFT ---
-    btfss   btn_edge, 1, c             ; skip if button 2 not just pressed
-    call    handleButton2
-    
-    goto mainLoop
-; ------------------------------------------------------------------
-; Button handlers
-; ------------------------------------------------------------------
-handleButton1:
-    call    Servo_IncPos                ; increase angle
-    BANKSEL LATD
-    bsf     BANKMASK(LATD), 0, 1       ; LED ON  = moving right
+    bcf     BANKMASK(LATE), 0, 1        ; LED OFF
     return
 
-handleButton2:
-    call    Servo_DecPos                ; decrease angle
-    BANKSEL LATD
-    bcf     BANKMASK(LATD), 0, 1       ; LED OFF = moving left
+; ------------------------------------------------------------------
+; LCD refresh gate
+; The main loop calls this every pass, but the LCD is only redrawn when
+; the Timer4-driven refresh countdown expires.
+; ------------------------------------------------------------------
+LCD_RefreshDisplay:
+    btfsc   lcd_clear_request, 0, c
+    bra     _lcd_refresh_clear_now
+
+    movf    lcd_refresh_ticks, f, c
+    bnz     _lcd_refresh_not_due
+    movlw   LCD_REFRESH_TICKS
+    movwf   lcd_refresh_ticks, c
+    call    LCD_PrintTargetFrame
     return
 
+_lcd_refresh_clear_now:
+    bcf     lcd_clear_request, 0, c
+    movlw   LCD_REFRESH_TICKS
+    movwf   lcd_refresh_ticks, c
+    call    LCD_Clear
+    call    LCD_PrintTargetFrame
+    return
+
+_lcd_refresh_not_due:
+    return
 
     END     resetVec
+   
