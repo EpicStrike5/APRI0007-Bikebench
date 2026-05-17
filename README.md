@@ -12,7 +12,7 @@ power-zone hysteresis).
 **Assembler flag:** `-xassembler-with-cpp`  
 **Linker option:** `-pivt=08h`  
 **Build:** always *Production → Clean and Build Main Project* : never just Build.
-**Erase Memory device:** : Burn everything to start over on a healthy basis
+**Erase Memory device:** Burn everything to start over on a healthy basis.
 
 ---
 
