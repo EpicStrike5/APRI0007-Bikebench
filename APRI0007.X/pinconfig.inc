@@ -4,6 +4,9 @@
 ;
 ; Groups pin direction, digital mode, pull-ups, and PPS
 ; remapping in one place. Call PinConfig_Init first.
+;
+; Forked directly from Microchip examples code available for the PIC18F-Q series example code ! 
+;
 ; ==========================================================
 ;
 ; ----------------------------------------------------------
