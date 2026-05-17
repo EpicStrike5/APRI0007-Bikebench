@@ -16,6 +16,19 @@ power-zone hysteresis).
 
 ---
 
+## Demos  
+
+Those videos are intended for the viewer to visualize the different process of the code IRL.  
+
+- [Automatic mode](https://mseduculiegebe-my.sharepoint.com/:v:/g/personal/thomas_bandin_student_uliege_be/IQBYqX3T7ebKTqOCSmLhfmY_ASN1u176U6nSphEwIxDTXLE?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=s5nzJf)
+- [Manual mode 1](https://mseduculiegebe-my.sharepoint.com/:v:/g/personal/thomas_bandin_student_uliege_be/IQDvDKbw4RyJQoSYKrfR6s4WAVsCVR9Qzp7ewZergFgKaEA?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=KfxviJ)
+- [Manual mode 2](https://mseduculiegebe-my.sharepoint.com/:v:/g/personal/thomas_bandin_student_uliege_be/IQAcF6TGcUCyQLD0BhfFDqJuAXYnZp0SlzzTwYZQ5ClRTnE?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=6eJkgy)
+- [LCD and startup](https://mseduculiegebe-my.sharepoint.com/:v:/g/personal/thomas_bandin_student_uliege_be/IQD0FzPJHaiySoaQNiMYxljuAXmf9asV43nGzSWrSrtlzCo?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=Afp3rp)
+
+
+
+---
+
 ## Pinout
 
 | Pin | Function | Dir |
